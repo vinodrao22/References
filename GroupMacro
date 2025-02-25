@@ -1,0 +1,79 @@
+Sub Add_Group()
+    Dim ws As Worksheet
+    Dim currentRow As Integer
+    Dim startRow As Integer, endRow As Integer
+    Dim currentValue As String
+    
+    ' Set active sheet
+    Set ws = ActiveSheet
+    
+    ' Get current row and value
+    currentRow = ActiveCell.Row
+    currentValue = ActiveCell.Value
+    
+    ' Ensure the current cell is not empty
+    If currentValue = "" Then
+        MsgBox "Please select a non-empty cell!", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Find the first occurrence of the value above
+    startRow = currentRow
+    Do While startRow > 1 And ws.Cells(startRow - 1, ActiveCell.Column).Value = currentValue
+        startRow = startRow - 1
+    Loop
+    
+    ' Find the last occurrence of the value below
+    endRow = currentRow
+    Do While endRow < ws.Rows.Count And ws.Cells(endRow + 1, ActiveCell.Column).Value = currentValue
+        endRow = endRow + 1
+    Loop
+    
+    ' Group the rows only if they form a valid range
+    If startRow < endRow Then
+        ws.Rows(startRow & ":" & endRow).Group
+        MsgBox "Grouped rows from " & startRow & " to " & endRow & " for value '" & currentValue & "'.", vbInformation
+    Else
+        MsgBox "No valid group found!", vbExclamation
+    End If
+End Sub
+
+Sub Delete_Group()
+    Dim ws As Worksheet
+    Dim currentRow As Integer
+    Dim startRow As Integer, endRow As Integer
+    Dim currentValue As String
+
+    ' Set active sheet
+    Set ws = ActiveSheet
+    
+    ' Get current row and value
+    currentRow = ActiveCell.Row
+    currentValue = ActiveCell.Value
+    
+    ' Ensure the current cell is not empty
+    If currentValue = "" Then
+        MsgBox "Please select a non-empty cell!", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Find the first occurrence of the value above
+    startRow = currentRow
+    Do While startRow > 1 And ws.Cells(startRow - 1, ActiveCell.Column).Value = currentValue
+        startRow = startRow - 1
+    Loop
+    
+    ' Find the last occurrence of the value below
+    endRow = currentRow
+    Do While endRow < ws.Rows.Count And ws.Cells(endRow + 1, ActiveCell.Column).Value = currentValue
+        endRow = endRow + 1
+    Loop
+    
+    ' Ungroup the rows if they are grouped
+    If startRow < endRow Then
+        ws.Rows(startRow & ":" & endRow).Ungroup
+        MsgBox "Ungrouped rows from " & startRow & " to " & endRow & " for value '" & currentValue & "'.", vbInformation
+    Else
+        MsgBox "No valid group found to ungroup!", vbExclamation
+    End If
+End Sub
