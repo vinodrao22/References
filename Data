@@ -1,85 +1,12 @@
-Here’s the content for two slides in your PowerPoint presentation.
-
-
----
-
-📌 Slide 1: Title Slide – Federated Learning with Unity Catalog
-
-Title: Global AI Strategy – Federated Learning with Unity Catalog
-Subtitle: Ensuring Data Sovereignty, Compliance & AI Collaboration Across Azure Regions
-
-Key Points (Bullet List):
-
-🌍 Why Federated Learning?
-
-Ensures data sovereignty by keeping raw data within its region.
-
-Reduces cross-region data transfer costs while improving global AI models.
-
-Supports collaborative AI without compromising compliance (GDPR, CCPA, HIPAA, etc.).
-
-
-🔹 Role of Unity Catalog
-
-Centralized metadata & governance across multiple Azure regions.
-
-Enables secure AI model tracking, RBAC-based access control, and lineage tracking.
-
-Facilitates cross-region AI model sharing while enforcing security policies.
-
-
-🚀 Key Benefits
-
-Scalable & Cost-Efficient AI Training without moving raw data.
-
-Improved Model Accuracy using insights from multiple regions.
-
-Seamless Integration with Azure Services (Synapse, Purview, ADLS, Databricks).
-
-
-
-📌 Next Slide: Proposed Federated Learning Architecture with Unity Catalog
-
-
----
-
-📌 Slide 2: Architecture Diagram – Federated Learning with Unity Catalog
-
-🎯 Title: Proposed Architecture for Federated Learning Using Unity Catalog
-
-Diagram (To be placed in the slide):
-✔ Per Country AI Training:
-
-Each country has its own Databricks Unity Catalog managing data stored in ADLS Gen2.
-
-Local AI models are trained within each Azure region.
-
-
-✔ Federated Learning Model Aggregation:
-
-AI models are trained locally, and only model parameters (not raw data) are shared.
-
-A Central Federated Learning Server aggregates the models in a neutral Azure region.
-
-
-✔ Global AI Governance with Unity Catalog:
-
-Unity Catalog tracks model lineage across all Azure regions.
-
-Azure Purview ensures compliance & governance.
-
-
-✔ Model Deployment & Insights:
-
-The global AI model is deployed via Azure Kubernetes (AKS) or Databricks Model Serving.
-
-Power BI & Azure Synapse provide insights from the federated model.
-
-
-📌 Key Takeaway: This architecture enables global AI collaboration while ensuring data sovereignty, governance, and compliance.
-
-
----
-
-Would you like me to create a PowerPoint file with these slides for you? 🚀
-
+--------------------------------------------------------
+| Finance Team      | MI Team       | Reconnect (ERP)  | ClickView / EDW  |
+--------------------------------------------------------
+| Book Expense      |               |                  |                  |
+| ↓                | Extract GL Data |                  |                  |
+| Send to Reconnect | → Process Data |                  |                  |
+|                  | → Upload Data  | Receive Data     |                  |
+|                  |                | → Push to EDW    |                  |
+|                  |                |                  | Receive Data     |
+|                  |                |                  | → Generate Report |
+|                  |                |                  | → Stakeholders Access |
+--------------------------------------------------------
