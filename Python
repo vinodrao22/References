@@ -1,27 +1,25 @@
 import pdfplumber
+import re
 
-# Load PDF
-pdf_path = r"C:\path\to\your\file.pdf"  # <-- Update this path
+pdf_path = r"C:\path\to\your\file.pdf"  # <-- Update this
+matched_sections = []
 
 with pdfplumber.open(pdf_path) as pdf:
-    page = pdf.pages[179]  # Page 180 (0-based index)
-    text = page.extract_text()
+    for page in pdf.pages[178:360]:  # Pages 179 to 360
+        text = page.extract_text()
+        if not text:
+            continue
 
-    if not text:
-        print("No text found on page 180.")
-    else:
-        print("=== Raw Extracted Text ===")
-        print(text)
-
-        # Normalize text to one line (replace line breaks with spaces)
+        # Merge lines so titles split across lines are joined
         normalized_text = ' '.join(text.splitlines())
-        print("\n=== Normalized Text ===")
-        print(normalized_text)
 
-        # Now check if our target section exists
-        target = "1 Remain ethical and independent during our audit engagements [ISA | 644]"
+        # Regex to match ONLY top-level sections like '1 Title [ISA | xxx]'
+        matches = re.findall(r"\b\d+\s+.*?ISA\s*\|\s*.*?", normalized_text)
 
-        if target in normalized_text:
-            print("\n>>> Section title FOUND in normalized text!")
-        else:
-            print("\n>>> Section title NOT found in normalized text.")
+        for match in matches:
+            matched_sections.append(match.strip())
+
+# Print all matched top-level sections
+print("Top-level sections found:")
+for section in matched_sections:
+    print(section)
