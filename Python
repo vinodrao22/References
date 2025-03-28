@@ -1,51 +1,20 @@
 import pdfplumber
-import pandas as pd
-import re
 
-# Set path to your PDF
-pdf_path = r"C:\path\to\your\file.pdf"  # <-- update this path
+# Load PDF
+pdf_path = r"C:\path\to\your\file.pdf"  # <-- Change this to your file path
 
-# Lists to collect extracted data
-sections = []
-what_do = []
-why_do = []
-execute_audit = []
-
-# Open and read specified pages
 with pdfplumber.open(pdf_path) as pdf:
-    for page in pdf.pages[178:360]:  # Pages 179 to 360
-        text = page.extract_text()
-        if not text:
-            continue
+    page = pdf.pages[179]  # Page 180 (index starts at 0)
+    text = page.extract_text()
 
-        # Merge lines to handle split headers and questions
-        merged_text = ' '.join(text.splitlines())
+    if not text:
+        print("No text found on page 180.")
+    else:
+        print("=== Raw Text from Page 180 ===")
+        print(text)
 
-        # Regex to extract sections and QA blocks
-        matches = re.findall(
-            r"(1(?:\.\d+)?\s+.*?ISA\s*\|\s*.*?)\s*"
-            r"What do we do\?\s*(.*?)\s*"
-            r"Why do we do this\?\s*(.*?)\s*"
-            r"Execute the Audit\s*(.*?)(?=1(?:\.\d+)?\s+.*?ISA\s*\|\s*.*?|$)",
-            merged_text
-        )
-
-        for match in matches:
-            section, what, why, exec_audit = match
-            sections.append(section.strip())
-            what_do.append(what.strip())
-            why_do.append(why.strip())
-            execute_audit.append(exec_audit.strip())
-
-# Create DataFrame
-df = pd.DataFrame({
-    "Section": sections,
-    "What do we do?": what_do,
-    "Why do we do this?": why_do,
-    "Execute the Audit": execute_audit
-})
-
-# Export to Excel
-df.to_excel("section_1_output.xlsx", index=False)
-
-print("Exported successfully to section_1_output.xlsx")
+        # Check if target section line is present
+        if "1 Remain ethical and independent during our audit engagements [ISA | 644]" in text:
+            print("\n>>> Section title FOUND on page 180!")
+        else:
+            print("\n>>> Section title NOT found on page 180.")
