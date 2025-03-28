@@ -15,8 +15,8 @@ with pdfplumber.open("yourfile.pdf") as pdf:
 
         # Only match section 1 and its subsections like 1.1, 1.2, etc.
   section_pattern = r"(?=(1(?:\.\d+)?\s.*?ISA\s*\|\s*.*?))"
-titles = re.findall(r"1(?:\.\d+)?\s.*?ISA\s*\|\s*.*?", text)
-blocks = re.split(section_pattern, text)
+section_pattern = r"(?=(1(?:\.\d+)?\s+.*?ISA\s*\|\s*.*?))"
+titles = re.findall(r"1(?:\.\d+)?\s+.*?ISA\s*\|\s*.*?", text)
 
         for i in range(1, len(blocks), 2):
             title = blocks[i].strip()
