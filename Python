@@ -1,1 +1,26 @@
-r"\b1\s+.+?ISA\s*\|\s*\d+"
+import pdfplumber
+import re
+
+pdf_path = r"C:\path\to\your\file.pdf"  # Update path
+
+with pdfplumber.open(pdf_path) as pdf:
+    page = pdf.pages[15]  # Page 16
+    text = page.extract_text()
+
+    if not text:
+        print("No text found.")
+    else:
+        normalized_text = ' '.join(text.splitlines())
+        print("Normalized Text:")
+        print(normalized_text)
+
+        # This regex matches '1 ' followed by everything up to [ISA | ...]
+        pattern = r"1\s+(.*?ISA\s*\|\s*\d+)"
+        match = re.search(pattern, normalized_text)
+
+        if match:
+            print("\n>>> Full section title:")
+            print("match.group(0):", match.group(0))  # With leading 1
+            print("match.group(1):", match.group(1))  # Just title
+        else:
+            print("\n>>> No match found.")
