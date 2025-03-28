@@ -1,1 +1,38 @@
-pattern = r"\b1\s+.*?\]"
+import pdfplumber
+import re
+
+pdf_path = r"C:\path\to\your\file.pdf"  # Update this
+
+with pdfplumber.open(pdf_path) as pdf:
+    page = pdf.pages[15]  # Page 16
+    text = page.extract_text()
+
+    if not text:
+        print("No text found.")
+    else:
+        normalized_text = ' '.join(text.splitlines())
+        print("Normalized Text:")
+        print(normalized_text)
+
+        # Step 1: Find the trigger question
+        trigger = "How do we comply with the Standards? [ISA | KAEGHDWC]"
+        trigger_index = normalized_text.find(trigger)
+
+        if trigger_index == -1:
+            print("\n>>> Trigger text NOT found.")
+        else:
+            print("\n>>> Trigger text FOUND. Searching after that...")
+
+            # Step 2: Only search after the trigger
+            remaining_text = normalized_text[trigger_index + len(trigger):]
+
+            # Match section title starting with 1 and ending at first closing ]
+            pattern = r"\b1\s+.*?\]"
+
+            match = re.search(pattern, remaining_text)
+
+            if match:
+                print("\n>>> Matched section title (after trigger):")
+                print(match.group(0))
+            else:
+                print("\n>>> No matching section title found after trigger.")
