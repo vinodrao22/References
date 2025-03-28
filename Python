@@ -1,0 +1,46 @@
+import pdfplumber
+import pandas as pd
+import re
+
+# Initialize lists to store extracted data
+sections = []
+what_do = []
+why_do = []
+execute_audit = []
+
+# Open the PDF file
+with pdfplumber.open("yourfile.pdf") as pdf:
+    for page in pdf.pages:
+        text = page.extract_text()
+
+        # Only match section 1 and its subsections like 1.1, 1.2, etc.
+        section_pattern = r"(?=(1(?:\.\d+)?\s.+?ISA\|.+?))"  # matches 1. or 1.1 etc.
+        titles = re.findall(r"1(?:\.\d+)?\s.+?ISA\|.+?", text)
+        blocks = re.split(section_pattern, text)
+
+        for i in range(1, len(blocks), 2):
+            title = blocks[i].strip()
+            content = blocks[i+1] if (i+1) < len(blocks) else ""
+
+            full_block = title + "\n" + content.strip()
+
+            section = title
+            what = re.search(r"What do we do\?\n (.+)", full_block)
+            why = re.search(r"Why do we do this\?\n (.+)", full_block)
+            exec = re.search(r"Execute the Audit\n (.+)", full_block)
+
+            sections.append(section)
+            what_do.append(what.group(1).strip() if what else "")
+            why_do.append(why.group(1).strip() if why else "")
+            execute_audit.append(exec.group(1).strip() if exec else "")
+
+# Create a DataFrame
+df = pd.DataFrame({
+    "Section": sections,
+    "What do we do?": what_do,
+    "Why do we do this?": why_do,
+    "Execute the Audit": execute_audit
+})
+
+# Export to Excel
+df.to_excel("section_1_output.xlsx", index=False)
