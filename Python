@@ -2,36 +2,42 @@ import pdfplumber
 import pandas as pd
 import re
 
-# Initialize lists to store extracted data
+# Set path to your PDF
+pdf_path = r"C:\path\to\your\file.pdf"  # <-- update this path
+
+# Lists to collect extracted data
 sections = []
 what_do = []
 why_do = []
 execute_audit = []
 
-# Open the PDF file
-with pdfplumber.open("yourfile.pdf") as pdf:
-    for page in pdf.pages:
+# Open and read specified pages
+with pdfplumber.open(pdf_path) as pdf:
+    for page in pdf.pages[178:360]:  # Pages 179 to 360
         text = page.extract_text()
+        if not text:
+            continue
 
-        # Only match section 1 and its subsections like 1.1, 1.2, etc.
-  section_pattern = r"(?=(1(?:\.\d+)?\s+.*?ISA\s*\|\s*.*?))"
-titles = re.findall(r"1(?:\.\d+)?\s+.*?ISA\s*\|\s*.*?", text)        for i in range(1, len(blocks), 2):
-            title = blocks[i].strip()
-            content = blocks[i+1] if (i+1) < len(blocks) else ""
+        # Merge lines to handle split headers and questions
+        merged_text = ' '.join(text.splitlines())
 
-            full_block = title + "\n" + content.strip()
+        # Regex to extract sections and QA blocks
+        matches = re.findall(
+            r"(1(?:\.\d+)?\s+.*?ISA\s*\|\s*.*?)\s*"
+            r"What do we do\?\s*(.*?)\s*"
+            r"Why do we do this\?\s*(.*?)\s*"
+            r"Execute the Audit\s*(.*?)(?=1(?:\.\d+)?\s+.*?ISA\s*\|\s*.*?|$)",
+            merged_text
+        )
 
-            section = title
-            what = re.search(r"What do we do\?\n (.+)", full_block)
-            why = re.search(r"Why do we do this\?\n (.+)", full_block)
-            exec = re.search(r"Execute the Audit\n (.+)", full_block)
+        for match in matches:
+            section, what, why, exec_audit = match
+            sections.append(section.strip())
+            what_do.append(what.strip())
+            why_do.append(why.strip())
+            execute_audit.append(exec_audit.strip())
 
-            sections.append(section)
-            what_do.append(what.group(1).strip() if what else "")
-            why_do.append(why.group(1).strip() if why else "")
-            execute_audit.append(exec.group(1).strip() if exec else "")
-
-# Create a DataFrame
+# Create DataFrame
 df = pd.DataFrame({
     "Section": sections,
     "What do we do?": what_do,
@@ -41,3 +47,5 @@ df = pd.DataFrame({
 
 # Export to Excel
 df.to_excel("section_1_output.xlsx", index=False)
+
+print("Exported successfully to section_1_output.xlsx")
