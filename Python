@@ -1,25 +1,62 @@
+Perfect — let’s go back to basics and try a regex match on page 16 to detect a section title using a simpler debug-first approach.
+
+
+---
+
+✅ Step-by-Step: Check Page 16 for Section Title Using Regex
+
+Here’s the updated version of the working script, now focused on page 16 (index 15), and uses regex to detect a top-level section:
+
 import pdfplumber
 import re
 
-pdf_path = r"C:\path\to\your\file.pdf"  # <-- Update this
-matched_sections = []
+pdf_path = r"C:\path\to\your\file.pdf"  # Update this
 
 with pdfplumber.open(pdf_path) as pdf:
-    for page in pdf.pages[178:360]:  # Pages 179 to 360
-        text = page.extract_text()
-        if not text:
-            continue
+    page = pdf.pages[15]  # Page 16 (0-based index)
+    text = page.extract_text()
 
-        # Merge lines so titles split across lines are joined
+    if not text:
+        print("No text found on page 16.")
+    else:
+        print("=== Raw Extracted Text ===")
+        print(text)
+
+        # Normalize text to handle line breaks
         normalized_text = ' '.join(text.splitlines())
 
-        # Regex to match ONLY top-level sections like '1 Title [ISA | xxx]'
-        matches = re.findall(r"\b\d+\s+.*?ISA\s*\|\s*.*?", normalized_text)
+        print("\n=== Normalized Text ===")
+        print(normalized_text)
 
-        for match in matches:
-            matched_sections.append(match.strip())
+        # Try to match a top-level section title like "1 Some title [ISA | 123]"
+        match = re.search(r"\b1\s+.*?ISA\s*\|\s*\d+.*?", normalized_text)
 
-# Print all matched top-level sections
-print("Top-level sections found:")
-for section in matched_sections:
-    print(section)
+        if match:
+            print("\n>>> Match found:")
+            print(match.group())
+        else:
+            print("\n>>> No match found.")
+
+
+---
+
+How to Use:
+
+Update the pdf_path to your file.
+
+This looks only for section 1 with a pattern like:
+
+1 Something something [ISA | 123]
+
+
+
+---
+
+If You Want to Match 2, 3, etc.:
+
+Just change the regex like this:
+
+match = re.search(r"\b[1-9]\b\s+.*?ISA\s*\|\s*\d+.*?", normalized_text)
+
+Let me know if a match is found — if not, copy-paste the printed Normalized Text and I’ll fine-tune the regex instantly.
+
