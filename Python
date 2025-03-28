@@ -15,7 +15,7 @@ with pdfplumber.open(pdf_path) as pdf:
         print(normalized_text)
 
         # Find all matches starting with a digit and ending with [ISA | xxx]
-        matches = re.findall(r"\b\d+\s+.*?ISA\s*\|\s*\d+.*?", normalized_text)
+        match = re.search(r"1\s+.*ISA\s*\|\s*\d+", normalized_text)
 
         if matches:
             print("\n>>> Matched Section Titles:")
