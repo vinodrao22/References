@@ -1,20 +1,27 @@
 import pdfplumber
 
 # Load PDF
-pdf_path = r"C:\path\to\your\file.pdf"  # <-- Change this to your file path
+pdf_path = r"C:\path\to\your\file.pdf"  # <-- Update this path
 
 with pdfplumber.open(pdf_path) as pdf:
-    page = pdf.pages[179]  # Page 180 (index starts at 0)
+    page = pdf.pages[179]  # Page 180 (0-based index)
     text = page.extract_text()
 
     if not text:
         print("No text found on page 180.")
     else:
-        print("=== Raw Text from Page 180 ===")
+        print("=== Raw Extracted Text ===")
         print(text)
 
-        # Check if target section line is present
-        if "1 Remain ethical and independent during our audit engagements [ISA | 644]" in text:
-            print("\n>>> Section title FOUND on page 180!")
+        # Normalize text to one line (replace line breaks with spaces)
+        normalized_text = ' '.join(text.splitlines())
+        print("\n=== Normalized Text ===")
+        print(normalized_text)
+
+        # Now check if our target section exists
+        target = "1 Remain ethical and independent during our audit engagements [ISA | 644]"
+
+        if target in normalized_text:
+            print("\n>>> Section title FOUND in normalized text!")
         else:
-            print("\n>>> Section title NOT found on page 180.")
+            print("\n>>> Section title NOT found in normalized text.")
