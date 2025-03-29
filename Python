@@ -2,22 +2,21 @@ import pdfplumber
 import re
 
 pdf_path = r"C:\path\to\your\file.pdf"
-page_number = 15  # start from logical page 15
+page_number = 15
 
 with pdfplumber.open(pdf_path) as pdf:
-    for page in pdf.pages[14:100]:  # 0-based index: page 14 = page 15
+    for page in pdf.pages[14:100]:  # pages 15 to 100
         text = page.extract_text()
         if not text:
             page_number += 1
             continue
 
         lines = text.splitlines()
-
         i = 0
         while i < len(lines):
             line = lines[i].strip()
 
-            # Check if this line or the next forms the trigger
+            # Check if current or next line is the trigger
             match_found = False
             if "How do we comply with the Standards?" in line and "[ISA | KAEGHDWC]" in line:
                 match_found = True
@@ -26,28 +25,42 @@ with pdfplumber.open(pdf_path) as pdf:
                 combined = line + " " + lines[i + 1].strip()
                 if "How do we comply with the Standards?" in combined and "[ISA | KAEGHDWC]" in combined:
                     match_found = True
-                    i += 2  # Skip the two lines forming the trigger
+                    i += 2
                 else:
                     i += 1
             else:
                 i += 1
 
             if match_found:
-                # Look ahead for the next section header (starts with number and ends with ])
-                section_lines = []
+                # After trigger, loop and collect all section headers
                 while i < len(lines):
-                    l = lines[i].strip()
-                    section_lines.append(l)
+                    section_lines = []
+                    # Skip empty lines
+                    while i < len(lines) and not lines[i].strip():
+                        i += 1
 
-                    # Check if line ends with ']'
-                    if re.search(r"ISA\s*\|\s*\d+$", l):
-                        break
+                    # Start of potential section
+                    if i < len(lines) and re.match(r"^\d+(\.\d+)*\b", lines[i].strip()):
+                        while i < len(lines):
+                            l = lines[i].strip()
+                            section_lines.append(l)
 
-                    i += 1
+                            if re.search(r"ISA\s*\|\s*\d+$", l):
+                                break
+                            i += 1
 
-                # Now combine the section header lines into a single string
-                section_title = ' '.join(section_lines).strip()
+                        section_title = ' '.join(section_lines).strip()
 
-                # Match section number pattern (e.g., 1, 1.1, 2.3.4)
-                if re.match(r"^\d+(\.\d+)*\s+.*ISA\s*\|\s*\d+$", section_title):
-                    print(f"[Page {page_number}] Section Title: {section_title}")
+                        if re.match(r"^\d+(\.\d+)*\s+.*ISA\s*\|\s*\d+$", section_title):
+                            print(f"[Page {page_number}] Section Title: {section_title}")
+                    else:
+                        # Stop if we hit another trigger while scanning
+                        if "How do we comply with the Standards?" in lines[i] and "[ISA | KAEGHDWC]" in lines[i]:
+                            break
+                        if i + 1 < len(lines):
+                            combined = lines[i].strip() + " " + lines[i + 1].strip()
+                            if "How do we comply with the Standards?" in combined and "[ISA | KAEGHDWC]" in combined:
+                                break
+                        i += 1
+
+        page_number += 1
