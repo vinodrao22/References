@@ -3,24 +3,22 @@ import pdfplumber
 pdf_path = r"C:\path\to\your\file.pdf"
 
 with pdfplumber.open(pdf_path) as pdf:
-    page = pdf.pages[15]  # You can loop later
-    text = page.extract_text()
+    for page_number, page in enumerate(pdf.pages, start=1):
+        text = page.extract_text()
+        if not text:
+            continue
 
-    if text:
         lines = text.splitlines()
-        print("Searching for 'How do we comply with the standards?...'\n")
 
         for i in range(len(lines)):
             line = lines[i].strip()
 
-            # Case 1: Whole match on a single line
+            # Case 1: Match on a single line
             if "How do we comply with the standards?" in line and "[ISA | KAEGHDWC]" in line:
-                print(f"Line {i}: {line}")
+                print(f"[Page {page_number}, Line {i}] Match: {line}")
 
-            # Case 2: Split across two lines
+            # Case 2: Match split across two lines
             if i + 1 < len(lines):
                 combined = line + " " + lines[i + 1].strip()
                 if "How do we comply with the standards?" in combined and "[ISA | KAEGHDWC]" in combined:
-                    print(f"Lines {i}-{i+1}: {combined}")
-    else:
-        print("No text found on page.")
+                    print(f"[Page {page_number}, Lines {i}-{i+1}] Match: {combined}")
