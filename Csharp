@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UglyToad.PdfPig;
 
 class Program
 {
     static void Main(string[] args)
     {
-        var pdfPath = @"C:\path\to\your\file.pdf"; // <-- change to your path
-        var documentLines = new List<(string Line, int PageNumber)>();
+        var pdfPath = @"C:\path\to\your\file.pdf";  // Update with your path
+        var trigger = "How do we comply with the Standards?";
+        var isa = "[ISA | KAEGHDWC]";
+
+        // Step 1: Load all lines from pages 15–500
+        var allLines = new List<(string Line, int PageNumber)>();
 
         using (var pdf = PdfDocument.Open(pdfPath))
         {
@@ -17,78 +20,37 @@ class Program
                 var page = pdf.GetPage(pageNum);
                 var lines = page.Text.Split('\n');
 
-                foreach (var line in lines)
+                foreach (var rawLine in lines)
                 {
-                    var clean = line.Trim();
+                    var clean = rawLine.Trim();
                     if (!string.IsNullOrWhiteSpace(clean))
-                    {
-                        documentLines.Add((clean, pageNum));
-                    }
+                        allLines.Add((clean, pageNum));
                 }
             }
         }
 
-        Console.WriteLine("Trigger and Section Extraction\n");
+        Console.WriteLine("Finished loading all lines. Starting trigger search...\n");
 
-        for (int i = 0; i < documentLines.Count; i++)
+        // Step 2: Process loaded lines
+        for (int i = 0; i < allLines.Count; i++)
         {
-            var (line, page) = documentLines[i];
-            bool triggerFound = false;
+            var (line, page) = allLines[i];
 
-            // Case 1: Full match in one line
-            if (line.Contains("How do we comply with the Standards?") && line.Contains("[ISA | KAEGHDWC]"))
+            // Case 1: Trigger all in one line
+            if (line.Contains(trigger) && line.Contains(isa))
             {
-                triggerFound = true;
-                i++;
-            }
-            // Case 2: Match split across lines
-            else if (i + 1 < documentLines.Count)
-            {
-                var combined = line + " " + documentLines[i + 1].Line;
-                if (combined.Contains("How do we comply with the Standards?") && combined.Contains("[ISA | KAEGHDWC]"))
-                {
-                    triggerFound = true;
-                    i += 2;
-                }
+                Console.WriteLine($"[Page {page}, Line {i}] {line}");
             }
 
-            if (triggerFound)
+            // Case 2: Trigger split across two lines
+            if (i + 1 < allLines.Count)
             {
-                Console.WriteLine($"\n[Page {page}] Trigger matched. Looking for section titles...");
+                var (nextLine, _) = allLines[i + 1];
+                var combined = line + " " + nextLine;
 
-                while (i < documentLines.Count)
+                if (combined.Contains(trigger) && combined.Contains(isa))
                 {
-                    var (currentLine, currentPage) = documentLines[i];
-
-                    // Stop if we hit a new trigger
-                    if (currentLine.Contains("How do we comply with the Standards?") && currentLine.Contains("[ISA | KAEGHDWC]"))
-                        break;
-
-                    // Detect section number
-                    if (Regex.IsMatch(currentLine, @"^\d+(\.\d+)*\b"))
-                    {
-                        string sectionText = currentLine;
-                        int j = i + 1;
-
-                        // Continue until we find closing bracket
-                        while (!sectionText.Contains("]") && j < documentLines.Count)
-                        {
-                            sectionText += " " + documentLines[j].Line;
-                            j++;
-                        }
-
-                        // Validate format
-                        if (Regex.IsMatch(sectionText, @"^\d+(\.\d+)*\s+.*ISA\s*\|\s*\d+$") && sectionText.Length <= 150)
-                        {
-                            Console.WriteLine($"[Page {currentPage}] Section Title: {sectionText}");
-                        }
-
-                        i = j;
-                    }
-                    else
-                    {
-                        i++;
-                    }
+                    Console.WriteLine($"[Page {page}, Lines {i}-{i + 1}] {combined}");
                 }
             }
         }
