@@ -4,7 +4,7 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Load pages 15–30 (indexes 14–29)
+# Load pages 15–30
 text = ""
 for page_number in range(14, min(30, len(doc))):
     text += doc[page_number].get_text() + "\n"
@@ -15,7 +15,6 @@ doc.close()
 section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
 isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
-# Process
 lines = text.split('\n')
 results = []
 
@@ -23,7 +22,7 @@ i = 0
 while i < len(lines):
     line = lines[i].strip()
     if section_start_pattern.match(line):
-        # Combine multi-line section header
+        # Combine section header
         combined_line = line
         j = i + 1
         while j < len(lines):
@@ -34,22 +33,31 @@ while i < len(lines):
             j += 1
         combined_line = combined_line.strip()
 
-        # Check conditions
         if len(combined_line) < 150 and isa_pattern.search(combined_line):
-            # Search for "What do we do?" section
+            # Search Q&A content
             k = j + 1
-            qna_answer = []
+            what_ans = []
+            why_ans = []
+            mode = None
+
             while k < len(lines):
                 current = lines[k].strip()
-                if current.lower().startswith("why do we do this") or current.lower().startswith("execute the audit"):
+                if current.lower().startswith("what do we do?"):
+                    mode = "what"
+                elif current.lower().startswith("why do we do this?"):
+                    mode = "why"
+                elif current.lower().startswith("execute the audit") or section_start_pattern.match(current):
                     break
-                if current.lower() != "what do we do?":  # Skip the question itself
-                    qna_answer.append(current)
+                elif mode == "what":
+                    what_ans.append(current)
+                elif mode == "why":
+                    why_ans.append(current)
                 k += 1
-            answer_text = ' '.join(qna_answer).strip()
+
             results.append({
                 "section": combined_line,
-                "what_do_we_do": answer_text
+                "what_do_we_do": ' '.join(what_ans).strip(),
+                "why_do_we_do_this": ' '.join(why_ans).strip()
             })
         i = j
     else:
@@ -57,4 +65,4 @@ while i < len(lines):
 
 # Output
 for item in results:
-    print(f"{item['section']}\nWhat do we do? -> {item['what_do_we_do']}\n")
+    print(f"{item['section']}\nWhat do we do? -> {item['what_do_we_do']}\nWhy do we do this? -> {item['why_do_we_do_this']}\n")
