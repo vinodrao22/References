@@ -14,9 +14,9 @@ with pdfplumber.open(pdf_path) as pdf:
         print("Normalized Text:")
         print(normalized_text)
 
-        # Step 1: Just match all section headers like 1, 1.1, 1.2.1, etc.
-        header_pattern = r"(\d+(?:\.\d+)*\s+.*?ISA\s*\|\s*.*?)"
-        matches = re.findall(header_pattern, normalized_text)
+        # Final regex that captures full section header including [ISA | 747]
+        pattern = r"(\d+(?:\.\d+)*\s+.+?ISA\s*\|\s*[^]+)"
+        matches = re.findall(pattern, normalized_text)
 
         print("\n>>> Section Headers Found:")
         for match in matches:
