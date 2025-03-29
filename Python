@@ -12,27 +12,15 @@ with pdfplumber.open(pdf_path) as pdf:
     else:
         normalized_text = ' '.join(text.splitlines())
 
-        trigger = "How do we comply with the Standards? [ISA | KAEGHDWC]"
-        trigger_index = normalized_text.find(trigger)
-
-        section_title = None
-        remaining_text = ""
-
-        if trigger_index != -1:
-            print("Trigger FOUND. Looking for section 1...")
-            remaining_text = normalized_text[trigger_index + len(trigger):]
-            match = re.search(r"\b1\s+.*?\]", remaining_text)
-        else:
-            print("Trigger NOT found. Looking for sections 2+ ...")
-            remaining_text = normalized_text
-            match = re.search(r"\b[2-9]\s+.*?\]", remaining_text)
+        # Updated pattern: match 1, 1.1, 1.2.1, etc. up to the first ]
+        match = re.search(r"\b\d+(?:\.\d+)*\s+.*?\]", normalized_text)
 
         if match:
             section_title = match.group(0).strip()
             section_end = match.end()
 
-            # Check if "What do we do?" follows immediately after the section
-            following_text = remaining_text[section_end:]
+            # Look for "What do we do?" after the section
+            following_text = normalized_text[section_end:]
             if "What do we do?" in following_text:
                 if len(section_title) < 150:
                     print("\n>>> Section title (valid):")
@@ -42,4 +30,4 @@ with pdfplumber.open(pdf_path) as pdf:
             else:
                 print("\n>>> Skipped — 'What do we do?' not found after section title")
         else:
-            print("\n>>> No matching section title found.")
+            print("\n>>> No section title found.")
