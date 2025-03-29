@@ -1,7 +1,7 @@
 import pdfplumber
 import re
 
-pdf_path = r"C:\path\to\your\file.pdf"  # Update this
+pdf_path = r"C:\path\to\your\file.pdf"
 
 with pdfplumber.open(pdf_path) as pdf:
     page = pdf.pages[15]  # Page 16
@@ -11,28 +11,35 @@ with pdfplumber.open(pdf_path) as pdf:
         print("No text found.")
     else:
         normalized_text = ' '.join(text.splitlines())
-        print("Normalized Text:")
-        print(normalized_text)
 
-        # Step 1: Find the trigger question
         trigger = "How do we comply with the Standards? [ISA | KAEGHDWC]"
         trigger_index = normalized_text.find(trigger)
 
-        if trigger_index == -1:
-            print("\n>>> Trigger text NOT found.")
-        else:
-            print("\n>>> Trigger text FOUND. Searching after that...")
+        section_title = None
+        remaining_text = ""
 
-            # Step 2: Only search after the trigger
+        if trigger_index != -1:
+            print("Trigger FOUND. Looking for section 1...")
             remaining_text = normalized_text[trigger_index + len(trigger):]
+            match = re.search(r"\b1\s+.*?\]", remaining_text)
+        else:
+            print("Trigger NOT found. Looking for sections 2+ ...")
+            remaining_text = normalized_text
+            match = re.search(r"\b[2-9]\s+.*?\]", remaining_text)
 
-            # Match section title starting with 1 and ending at first closing ]
-            pattern = r"\b1\s+.*?\]"
+        if match:
+            section_title = match.group(0).strip()
+            section_end = match.end()
 
-            match = re.search(pattern, remaining_text)
-
-            if match:
-                print("\n>>> Matched section title (after trigger):")
-                print(match.group(0))
+            # Check if "What do we do?" follows immediately after the section
+            following_text = remaining_text[section_end:]
+            if "What do we do?" in following_text:
+                if len(section_title) < 150:
+                    print("\n>>> Section title (valid):")
+                    print(section_title)
+                else:
+                    print("\n>>> Skipped — section title too long")
             else:
-                print("\n>>> No matching section title found after trigger.")
+                print("\n>>> Skipped — 'What do we do?' not found after section title")
+        else:
+            print("\n>>> No matching section title found.")
