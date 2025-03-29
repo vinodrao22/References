@@ -12,15 +12,15 @@ with pdfplumber.open(pdf_path) as pdf:
     else:
         normalized_text = ' '.join(text.splitlines())
 
-        # Updated pattern: match 1, 1.1, 1.2.1, etc. up to the first ]
+        # Updated regex to match 1, 1.1, 2.3.4, etc.
         match = re.search(r"\b\d+(?:\.\d+)*\s+.*?\]", normalized_text)
 
         if match:
             section_title = match.group(0).strip()
             section_end = match.end()
 
-            # Look for "What do we do?" after the section
             following_text = normalized_text[section_end:]
+
             if "What do we do?" in following_text:
                 if len(section_title) < 150:
                     print("\n>>> Section title (valid):")
