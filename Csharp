@@ -1,8 +1,16 @@
-using System; using System.Collections.Generic; using System.Text.RegularExpressions; using UglyToad.PdfPig; using UglyToad.PdfPig.Content;
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using UglyToad.PdfPig;
 
-namespace PdfSectionParser { class Program { static void Main(string[] args) { var pdfPath = @"C:\path\to\your\file.pdf";  // <-- Replace with your actual path var documentLines = new List<(string Line, int PageNumber)>();
+class Program
+{
+    static void Main(string[] args)
+    {
+        var pdfPath = @"C:\path\to\your\file.pdf"; // <-- change to your path
+        var documentLines = new List<(string Line, int PageNumber)>();
 
-using (var pdf = PdfDocument.Open(pdfPath))
+        using (var pdf = PdfDocument.Open(pdfPath))
         {
             for (int pageNum = 15; pageNum <= 500; pageNum++)
             {
@@ -13,56 +21,66 @@ using (var pdf = PdfDocument.Open(pdfPath))
                 {
                     var clean = line.Trim();
                     if (!string.IsNullOrWhiteSpace(clean))
+                    {
                         documentLines.Add((clean, pageNum));
+                    }
                 }
             }
         }
 
+        Console.WriteLine("Trigger and Section Extraction\n");
+
         for (int i = 0; i < documentLines.Count; i++)
         {
             var (line, page) = documentLines[i];
-            bool matchFound = false;
+            bool triggerFound = false;
 
+            // Case 1: Full match in one line
             if (line.Contains("How do we comply with the Standards?") && line.Contains("[ISA | KAEGHDWC]"))
             {
-                matchFound = true;
+                triggerFound = true;
                 i++;
             }
+            // Case 2: Match split across lines
             else if (i + 1 < documentLines.Count)
             {
                 var combined = line + " " + documentLines[i + 1].Line;
                 if (combined.Contains("How do we comply with the Standards?") && combined.Contains("[ISA | KAEGHDWC]"))
                 {
-                    matchFound = true;
+                    triggerFound = true;
                     i += 2;
                 }
             }
 
-            if (matchFound)
+            if (triggerFound)
             {
-                Console.WriteLine($"\n[Page {page}] Trigger matched — start collecting section headers");
+                Console.WriteLine($"\n[Page {page}] Trigger matched. Looking for section titles...");
 
                 while (i < documentLines.Count)
                 {
-                    var (sectionLine, sectionPage) = documentLines[i];
+                    var (currentLine, currentPage) = documentLines[i];
 
-                    if (sectionLine.Contains("How do we comply with the Standards?") && sectionLine.Contains("[ISA | KAEGHDWC]"))
+                    // Stop if we hit a new trigger
+                    if (currentLine.Contains("How do we comply with the Standards?") && currentLine.Contains("[ISA | KAEGHDWC]"))
                         break;
 
-                    if (Regex.IsMatch(sectionLine, @"^\d+(\.\d+)*\b"))
+                    // Detect section number
+                    if (Regex.IsMatch(currentLine, @"^\d+(\.\d+)*\b"))
                     {
-                        var sectionText = sectionLine;
+                        string sectionText = currentLine;
                         int j = i + 1;
 
+                        // Continue until we find closing bracket
                         while (!sectionText.Contains("]") && j < documentLines.Count)
                         {
                             sectionText += " " + documentLines[j].Line;
                             j++;
                         }
 
+                        // Validate format
                         if (Regex.IsMatch(sectionText, @"^\d+(\.\d+)*\s+.*ISA\s*\|\s*\d+$") && sectionText.Length <= 150)
                         {
-                            Console.WriteLine($"[Page {sectionPage}] Section Title: {sectionText}");
+                            Console.WriteLine($"[Page {currentPage}] Section Title: {sectionText}");
                         }
 
                         i = j;
@@ -74,8 +92,7 @@ using (var pdf = PdfDocument.Open(pdfPath))
                 }
             }
         }
+
+        Console.WriteLine("\nDone.");
     }
 }
-
-}
-
