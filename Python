@@ -1,1 +1,23 @@
-pattern = r"(\d+(?:\.\d+)*\s+.*?ISA\s*\|\s*.*?)\s*What do we do\?\s*(.*?)\s*Why do we do this\?\s*(.*?)\s*Execute the Audit\s*(.*?)(?=\d+(?:\.\d+)*\s+.*?ISA\s*\|\s*.*?|$)"
+import pdfplumber
+import re
+
+pdf_path = r"C:\path\to\your\file.pdf"
+
+with pdfplumber.open(pdf_path) as pdf:
+    page = pdf.pages[15]  # Page 16
+    text = page.extract_text()
+
+    if not text:
+        print("No text found.")
+    else:
+        normalized_text = ' '.join(text.splitlines())
+        print("Normalized Text:")
+        print(normalized_text)
+
+        # Step 1: Just match all section headers like 1, 1.1, 1.2.1, etc.
+        header_pattern = r"(\d+(?:\.\d+)*\s+.*?ISA\s*\|\s*.*?)"
+        matches = re.findall(header_pattern, normalized_text)
+
+        print("\n>>> Section Headers Found:")
+        for match in matches:
+            print(match.strip())
