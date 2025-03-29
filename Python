@@ -1,5 +1,4 @@
 import pdfplumber
-import re
 
 pdf_path = r"C:\path\to\your\file.pdf"
 results = []
@@ -18,17 +17,27 @@ with pdfplumber.open(pdf_path) as pdf:
             line = lines[i].strip()
             section = None
 
-            # Match lines starting with 1, 1.1, 1.1.1, etc.
-            if re.match(r"^\d+(\.\d+)*\b", line):
+            # Case 1: ISA on same line
+            if line and line[0].isdigit() and "[ISA |" in line:
                 section = line
 
-                # Add continuation lines if needed to get full section title
-                if i + 1 < len(lines) and "[ISA |" in lines[i + 1]:
-                    section += " " + lines[i + 1].strip()
-                    i += 1
-                elif i + 2 < len(lines) and "[ISA |" in lines[i + 2]:
-                    section += " " + lines[i + 1].strip() + " " + lines[i + 2].strip()
-                    i += 2
+            # Case 2: ISA on next line
+            elif (
+                line and line[0].isdigit()
+                and i + 1 < len(lines)
+                and "[ISA |" in lines[i + 1]
+            ):
+                section = line + " " + lines[i + 1].strip()
+                i += 1
+
+            # Case 3: ISA on line after next (third line)
+            elif (
+                line and line[0].isdigit()
+                and i + 2 < len(lines)
+                and "[ISA |" in lines[i + 2]
+            ):
+                section = line + " " + lines[i + 1].strip() + " " + lines[i + 2].strip()
+                i += 2
 
             else:
                 i += 1
@@ -54,21 +63,22 @@ with pdfplumber.open(pdf_path) as pdf:
                         i += 1
                         while i < len(lines):
                             next_line = lines[i].strip()
-                            # Stop at next section start
-                            if re.match(r"^\d+(\.\d+)*\b", next_line):
-                                break
-                            if "[ISA |" in next_line:
+                            if next_line and next_line[0].isdigit() and (
+                                "[ISA |" in next_line
+                                or (i + 1 < len(lines) and "[ISA |" in lines[i + 1])
+                                or (i + 2 < len(lines) and "[ISA |" in lines[i + 2])
+                            ):
                                 break
                             execute += " " + next_line
                             i += 1
 
-                        # Only save complete blocks
                         results.append({
                             "Section": section.strip(),
                             "What do we do?": what.strip(),
                             "Why do we do this?": why.strip(),
                             "Execute the Audit": execute.strip()
                         })
+
             else:
                 i += 1
 
