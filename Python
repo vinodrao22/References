@@ -4,18 +4,36 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Regex: match lines that start with 1, 1.1, 1.1.1, etc., followed by a space
-section_pattern = re.compile(r'^\d+(\.\d+)*\s.+ISA\s\|\s\d+$')
+# Detect start of section headers
+section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
+
+# Detect ISA at end (may wrap to next line)
+isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
 section_headers = []
 
 for page_number in range(min(30, len(doc))):
     page = doc[page_number]
-    text = page.get_text()
-    for line in text.split('\n'):
-        line = line.strip()
-        if section_pattern.match(line):
-            section_headers.append(line)
+    lines = page.get_text().split('\n')
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+
+        # Start of a section header
+        if section_start_pattern.match(line):
+            # Try to combine with next line if it's a continuation (e.g., ISA is in the next line)
+            combined_line = line
+            j = i + 1
+            while j < len(lines):
+                next_line = lines[j].strip()
+                combined_line += ' ' + next_line
+                if '[ISA' in next_line:
+                    break
+                j += 1
+            section_headers.append(combined_line.strip())
+            i = j  # Skip to the line after
+        else:
+            i += 1
 
 doc.close()
 
