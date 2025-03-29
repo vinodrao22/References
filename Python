@@ -12,8 +12,8 @@ with pdfplumber.open(pdf_path) as pdf:
     else:
         normalized_text = ' '.join(text.splitlines())
 
-        # Updated regex to match 1, 1.1, 2.3.4, etc.
-        match = re.search(r"\b\d+(?:\.\d+)*\s+.*?\]", normalized_text)
+        # Match section number (like 1 or 1.1) followed by a title ending at ]
+        match = re.search(r"\b\d+(\.\d+)?\s+.*?\]", normalized_text)
 
         if match:
             section_title = match.group(0).strip()
