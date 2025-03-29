@@ -1,7 +1,8 @@
 import pdfplumber
 import re
 
-pdf_path = r"C:\path\to\your\file.pdf"
+pdf_path = r"C:\path\to\your\file.pdf"  # Update your file path
+results = []
 
 with pdfplumber.open(pdf_path) as pdf:
     page = pdf.pages[15]  # Page 16
@@ -12,22 +13,22 @@ with pdfplumber.open(pdf_path) as pdf:
     else:
         normalized_text = ' '.join(text.splitlines())
 
-        # Match section number (like 1 or 1.1) followed by a title ending at ]
-        match = re.search(r"\b\d+(\.\d+)?\s+.*?\]", normalized_text)
+        # Match section headers: 1, 1.1, 1.1.1, etc. with [ISA | ...]
+        pattern = r"(\d+(?:\.\d+)*\s+.*?ISA\s*\|\s*.*?)\s*What do we do\?\s*(.*?)\s*Why do we do this\?\s*(.*?)\s*Execute the Audit\s*(.*?)(?=\d+(?:\.\d+)*\s+.*?ISA\s*\|\s*.*?|$)"
 
-        if match:
-            section_title = match.group(0).strip()
-            section_end = match.end()
+        matches = re.findall(pattern, normalized_text)
 
-            following_text = normalized_text[section_end:]
+        for section, what, why, execute in matches:
+            if len(section) < 150:
+                results.append({
+                    "Section": section.strip(),
+                    "What do we do?": what.strip(),
+                    "Why do we do this?": why.strip(),
+                    "Execute the Audit": execute.strip()
+                })
 
-            if "What do we do?" in following_text:
-                if len(section_title) < 150:
-                    print("\n>>> Section title (valid):")
-                    print(section_title)
-                else:
-                    print("\n>>> Skipped — section title too long")
-            else:
-                print("\n>>> Skipped — 'What do we do?' not found after section title")
-        else:
-            print("\n>>> No section title found.")
+# Display results
+for i, item in enumerate(results, start=1):
+    print(f"\nSection {i}")
+    for key, value in item.items():
+        print(f"{key}: {value}")
