@@ -13,6 +13,7 @@ doc.close()
 
 # Patterns
 section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
+isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
 # Process text
 lines = text.split('\n')
@@ -30,7 +31,9 @@ while i < len(lines):
             if '[ISA' in next_line:
                 break
             j += 1
-        section_headers.append(combined_line.strip())
+        combined_line = combined_line.strip()
+        if len(combined_line) < 150 and isa_pattern.search(combined_line):
+            section_headers.append(combined_line)
         i = j
     else:
         i += 1
