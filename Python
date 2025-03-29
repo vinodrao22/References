@@ -4,7 +4,7 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Collect all text from pages 15–30 (indexes 14–29)
+# Load pages 15–30 (indexes 14–29)
 text = ""
 for page_number in range(14, min(30, len(doc))):
     text += doc[page_number].get_text() + "\n"
@@ -15,14 +15,15 @@ doc.close()
 section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
 isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
-# Process text
+# Process
 lines = text.split('\n')
-section_headers = []
+results = []
 
 i = 0
 while i < len(lines):
     line = lines[i].strip()
     if section_start_pattern.match(line):
+        # Combine multi-line section header
         combined_line = line
         j = i + 1
         while j < len(lines):
@@ -32,12 +33,28 @@ while i < len(lines):
                 break
             j += 1
         combined_line = combined_line.strip()
+
+        # Check conditions
         if len(combined_line) < 150 and isa_pattern.search(combined_line):
-            section_headers.append(combined_line)
+            # Search for "What do we do?" section
+            k = j + 1
+            qna_answer = []
+            while k < len(lines):
+                current = lines[k].strip()
+                if current.lower().startswith("why do we do this") or current.lower().startswith("execute the audit"):
+                    break
+                if current.lower() != "what do we do?":  # Skip the question itself
+                    qna_answer.append(current)
+                k += 1
+            answer_text = ' '.join(qna_answer).strip()
+            results.append({
+                "section": combined_line,
+                "what_do_we_do": answer_text
+            })
         i = j
     else:
         i += 1
 
-# Output results
-for header in section_headers:
-    print(header)
+# Output
+for item in results:
+    print(f"{item['section']}\nWhat do we do? -> {item['what_do_we_do']}\n")
