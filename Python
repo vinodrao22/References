@@ -3,31 +3,32 @@ import re
 
 pdf_path = r"C:\path\to\your\file.pdf"
 
-# Step 1: Load and flatten all lines from all pages
-document_lines = []  # list of (line_text, page_number)
+# Step 1: Load and flatten lines only from pages 15 to 500
+document_lines = []
 
 with pdfplumber.open(pdf_path) as pdf:
-    for page_index, page in enumerate(pdf.pages, start=1):
+    for page_index in range(14, 500):  # pages 15 to 500 inclusive
+        page = pdf.pages[page_index]
         text = page.extract_text()
         if not text:
             continue
         lines = text.splitlines()
         for line in lines:
-            document_lines.append((line.strip(), page_index))
+            document_lines.append((line.strip(), page_index + 1))  # +1 to match human-readable page number
 
-# Step 2: Detect all trigger points and collect section headers after each one
+# Step 2: Trigger + multiple section headers logic
 i = 0
 while i < len(document_lines):
     line, page = document_lines[i]
 
     match_found = False
 
-    # Case 1: trigger in single line
+    # Case 1: full trigger on single line
     if "How do we comply with the Standards?" in line and "[ISA | KAEGHDWC]" in line:
         match_found = True
         i += 1
 
-    # Case 2: trigger split across two lines
+    # Case 2: trigger split across 2 lines
     elif i + 1 < len(document_lines):
         next_line, _ = document_lines[i + 1]
         combined = line + " " + next_line
@@ -42,11 +43,10 @@ while i < len(document_lines):
     if match_found:
         print(f"\n[Page {page}] Trigger matched — start collecting section headers")
 
-        # Start collecting section headers until the next trigger
         while i < len(document_lines):
             line, page = document_lines[i]
 
-            # Stop if next trigger is found
+            # Stop at next trigger
             if "How do we comply with the Standards?" in line and "[ISA | KAEGHDWC]" in line:
                 break
             elif (
@@ -56,11 +56,10 @@ while i < len(document_lines):
             ):
                 break
 
-            # Detect section start (e.g., 1, 1.1, 1.2.3)
+            # Section header start detection
             if re.match(r"^\d+(\.\d+)*\b", line):
                 section_lines = [line]
                 i += 1
-                # Keep appending until we reach a line that ends with ] (assume end of section title)
                 while i < len(document_lines):
                     next_line, _ = document_lines[i]
                     section_lines.append(next_line)
@@ -71,6 +70,6 @@ while i < len(document_lines):
                 section_title = ' '.join(section_lines).strip()
                 if re.match(r"^\d+(\.\d+)*\s+.*ISA\s*\|\s*\d+$", section_title):
                     print(f"[Page {page}] Section Title: {section_title}")
-                i += 1  # move to next line after section
+                i += 1
             else:
-                i += 1  # keep scanning
+                i += 1
