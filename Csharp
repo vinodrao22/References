@@ -1,0 +1,81 @@
+using System; using System.Collections.Generic; using System.Text.RegularExpressions; using UglyToad.PdfPig; using UglyToad.PdfPig.Content;
+
+namespace PdfSectionParser { class Program { static void Main(string[] args) { var pdfPath = @"C:\path\to\your\file.pdf";  // <-- Replace with your actual path var documentLines = new List<(string Line, int PageNumber)>();
+
+using (var pdf = PdfDocument.Open(pdfPath))
+        {
+            for (int pageNum = 15; pageNum <= 500; pageNum++)
+            {
+                var page = pdf.GetPage(pageNum);
+                var lines = page.Text.Split('\n');
+
+                foreach (var line in lines)
+                {
+                    var clean = line.Trim();
+                    if (!string.IsNullOrWhiteSpace(clean))
+                        documentLines.Add((clean, pageNum));
+                }
+            }
+        }
+
+        for (int i = 0; i < documentLines.Count; i++)
+        {
+            var (line, page) = documentLines[i];
+            bool matchFound = false;
+
+            if (line.Contains("How do we comply with the Standards?") && line.Contains("[ISA | KAEGHDWC]"))
+            {
+                matchFound = true;
+                i++;
+            }
+            else if (i + 1 < documentLines.Count)
+            {
+                var combined = line + " " + documentLines[i + 1].Line;
+                if (combined.Contains("How do we comply with the Standards?") && combined.Contains("[ISA | KAEGHDWC]"))
+                {
+                    matchFound = true;
+                    i += 2;
+                }
+            }
+
+            if (matchFound)
+            {
+                Console.WriteLine($"\n[Page {page}] Trigger matched — start collecting section headers");
+
+                while (i < documentLines.Count)
+                {
+                    var (sectionLine, sectionPage) = documentLines[i];
+
+                    if (sectionLine.Contains("How do we comply with the Standards?") && sectionLine.Contains("[ISA | KAEGHDWC]"))
+                        break;
+
+                    if (Regex.IsMatch(sectionLine, @"^\d+(\.\d+)*\b"))
+                    {
+                        var sectionText = sectionLine;
+                        int j = i + 1;
+
+                        while (!sectionText.Contains("]") && j < documentLines.Count)
+                        {
+                            sectionText += " " + documentLines[j].Line;
+                            j++;
+                        }
+
+                        if (Regex.IsMatch(sectionText, @"^\d+(\.\d+)*\s+.*ISA\s*\|\s*\d+$") && sectionText.Length <= 150)
+                        {
+                            Console.WriteLine($"[Page {sectionPage}] Section Title: {sectionText}");
+                        }
+
+                        i = j;
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                }
+            }
+        }
+    }
+}
+
+}
+
