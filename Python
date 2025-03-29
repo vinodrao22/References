@@ -1,78 +1,26 @@
 import pdfplumber
-import re
 
 pdf_path = r"C:\path\to\your\file.pdf"
-results = []
 
 with pdfplumber.open(pdf_path) as pdf:
-    page = pdf.pages[15]  # Page 16
+    page = pdf.pages[15]  # You can loop later
     text = page.extract_text()
 
-    if not text:
-        print("No text found.")
-    else:
+    if text:
         lines = text.splitlines()
-        i = 0
-        total_lines = len(lines)
+        print("Searching for 'How do we comply with the standards?...'\n")
 
-        while i < total_lines:
+        for i in range(len(lines)):
             line = lines[i].strip()
-            section = None
-            original_i = i  # keep track of where we started
 
-            # Detect section header: 1, 1.1, 1.1.1, etc.
-            if re.match(r"^\d+(\.\d+)*\b", line):
-                section = line
-                for offset in range(1, 4):  # look ahead up to 3 lines
-                    if i + offset < total_lines and "[ISA |" in lines[i + offset]:
-                        section += " " + " ".join(lines[i + 1:i + offset + 1]).strip()
-                        i += offset
-                        break
+            # Case 1: Whole match on a single line
+            if "How do we comply with the standards?" in line and "[ISA | KAEGHDWC]" in line:
+                print(f"Line {i}: {line}")
 
-            if not section:
-                i += 1
-                continue
-
-            # Now try to parse the Q&A
-            what, why, execute = "", "", ""
-            consumed_lines = 0
-            start_i = i + 1
-
-            if start_i < total_lines and lines[start_i].strip().startswith("What do we do"):
-                j = start_i + 1
-                while j < total_lines and not lines[j].strip().startswith("Why do we do this"):
-                    what += " " + lines[j].strip()
-                    j += 1
-
-                if j < total_lines and lines[j].strip().startswith("Why do we do this"):
-                    j += 1
-                    while j < total_lines and not lines[j].strip().startswith("Execute the Audit"):
-                        why += " " + lines[j].strip()
-                        j += 1
-
-                    if j < total_lines and lines[j].strip().startswith("Execute the Audit"):
-                        j += 1
-                        while j < total_lines:
-                            next_line = lines[j].strip()
-                            if re.match(r"^\d+(\.\d+)*\b", next_line) or "[ISA |" in next_line:
-                                break
-                            execute += " " + next_line
-                            j += 1
-
-                        results.append({
-                            "Section": section.strip(),
-                            "What do we do?": what.strip(),
-                            "Why do we do this?": why.strip(),
-                            "Execute the Audit": execute.strip()
-                        })
-
-                        i = j  # continue from after the audit block
-                        continue  # skip rest of loop
-
-            i = original_i + 1  # if no Q&A matched, just move one line forward
-
-# Print results
-for idx, item in enumerate(results, 1):
-    print(f"\nSection {idx}")
-    for key, value in item.items():
-        print(f"{key}: {value}")
+            # Case 2: Split across two lines
+            if i + 1 < len(lines):
+                combined = line + " " + lines[i + 1].strip()
+                if "How do we comply with the standards?" in combined and "[ISA | KAEGHDWC]" in combined:
+                    print(f"Lines {i}-{i+1}: {combined}")
+    else:
+        print("No text found on page.")
