@@ -1,6 +1,7 @@
 import pdfplumber
+import re
 
-pdf_path = r"C:\path\to\your\file.pdf"
+pdf_path = r"C:\path\to\your\file.pdf"  # Update this path
 results = []
 
 with pdfplumber.open(pdf_path) as pdf:
@@ -17,33 +18,24 @@ with pdfplumber.open(pdf_path) as pdf:
             line = lines[i].strip()
             section = None
 
-            # Case 1: ISA on same line
-            if line and line[0].isdigit() and "[ISA |" in line:
+            # Check if line starts with section pattern like 1, 1.1, 1.1.1
+            if line and re.match(r"^\d+(\.\d+)*\b", line):
                 section = line
 
-            # Case 2: ISA on next line
-            elif (
-                line and line[0].isdigit()
-                and i + 1 < len(lines)
-                and "[ISA |" in lines[i + 1]
-            ):
-                section = line + " " + lines[i + 1].strip()
-                i += 1
-
-            # Case 3: ISA on line after next (third line)
-            elif (
-                line and line[0].isdigit()
-                and i + 2 < len(lines)
-                and "[ISA |" in lines[i + 2]
-            ):
-                section = line + " " + lines[i + 1].strip() + " " + lines[i + 2].strip()
-                i += 2
+                # Check if ISA is not in the same line
+                if "[ISA |" not in section:
+                    if i + 1 < len(lines) and "[ISA |" in lines[i + 1]:
+                        section += " " + lines[i + 1].strip()
+                        i += 1
+                    elif i + 2 < len(lines) and "[ISA |" in lines[i + 2]:
+                        section += " " + lines[i + 1].strip() + " " + lines[i + 2].strip()
+                        i += 2
 
             else:
                 i += 1
                 continue
 
-            # Look for Q&A block
+            # Look for Q&A block after section
             what, why, execute = "", "", ""
             i += 1
 
@@ -63,11 +55,10 @@ with pdfplumber.open(pdf_path) as pdf:
                         i += 1
                         while i < len(lines):
                             next_line = lines[i].strip()
-                            if next_line and next_line[0].isdigit() and (
-                                "[ISA |" in next_line
-                                or (i + 1 < len(lines) and "[ISA |" in lines[i + 1])
-                                or (i + 2 < len(lines) and "[ISA |" in lines[i + 2])
-                            ):
+                            # Stop if the next line is the start of a new section
+                            if next_line and re.match(r"^\d+(\.\d+)*\b", next_line):
+                                break
+                            if "[ISA |" in next_line:
                                 break
                             execute += " " + next_line
                             i += 1
@@ -78,7 +69,6 @@ with pdfplumber.open(pdf_path) as pdf:
                             "Why do we do this?": why.strip(),
                             "Execute the Audit": execute.strip()
                         })
-
             else:
                 i += 1
 
