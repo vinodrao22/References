@@ -1,25 +1,24 @@
 import fitz  # PyMuPDF
 import re
 
-# Load the PDF
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Regular expression pattern for section headers like 1, 1.1, 1.1.1, etc.
-section_pattern = re.compile(r'^\d+(\.\d+)*\s')
+# Regex: match lines that start with 1, 1.1, 1.1.1, etc., followed by a space
+section_pattern = re.compile(r'^\d+(\.\d+)*\s.+ISA\s\|\s\d+$')
 
-# Extract section headers only from the first 30 pages
 section_headers = []
 
 for page_number in range(min(30, len(doc))):
     page = doc[page_number]
     text = page.get_text()
     for line in text.split('\n'):
-        if section_pattern.match(line.strip()):
-            section_headers.append(line.strip())
+        line = line.strip()
+        if section_pattern.match(line):
+            section_headers.append(line)
 
 doc.close()
 
-# Display extracted section headers
+# Print results
 for header in section_headers:
     print(header)
