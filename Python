@@ -4,39 +4,37 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Detect start of section headers
-section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
-
-# Detect ISA at end (may wrap to next line)
-isa_pattern = re.compile(r'ISA\s\|\s\d+')
-
-section_headers = []
-
-for page_number in range(min(30, len(doc))):
-    page = doc[page_number]
-    lines = page.get_text().split('\n')
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-
-        # Start of a section header
-        if section_start_pattern.match(line):
-            # Try to combine with next line if it's a continuation (e.g., ISA is in the next line)
-            combined_line = line
-            j = i + 1
-            while j < len(lines):
-                next_line = lines[j].strip()
-                combined_line += ' ' + next_line
-                if '[ISA' in next_line:
-                    break
-                j += 1
-            section_headers.append(combined_line.strip())
-            i = j  # Skip to the line after
-        else:
-            i += 1
+# Collect all text from pages 15–30 (indexes 14–29)
+text = ""
+for page_number in range(14, min(30, len(doc))):
+    text += doc[page_number].get_text() + "\n"
 
 doc.close()
 
-# Print results
+# Patterns
+section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
+
+# Process text
+lines = text.split('\n')
+section_headers = []
+
+i = 0
+while i < len(lines):
+    line = lines[i].strip()
+    if section_start_pattern.match(line):
+        combined_line = line
+        j = i + 1
+        while j < len(lines):
+            next_line = lines[j].strip()
+            combined_line += ' ' + next_line
+            if '[ISA' in next_line:
+                break
+            j += 1
+        section_headers.append(combined_line.strip())
+        i = j
+    else:
+        i += 1
+
+# Output results
 for header in section_headers:
     print(header)
