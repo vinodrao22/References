@@ -4,22 +4,31 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Load pages 15–30 (index 14–29), remove page number footer lines
+# Collect pages with cleaned lines
 pages = []
-for page_number in range(14, min(30, len(doc))):
-    visible_page_number = page_number + 1  # footer shows this number
+for page_number in range(14, min(30, len(doc))):  # page 15 = index 14
+    visible_page_number = page_number + 1
+
+    # Known static footer lines
+    footer_lines = {
+        str(visible_page_number),  # dynamic footer line: just the page number
+        # Add other static lines if needed
+        # "This document is confidential...",
+        # "KPMG Audit Template",
+    }
+
     page_lines = doc[page_number].get_text().split('\n')
 
-    # Remove footer line if it matches the visible page number
+    # Exclude known footer lines
     filtered_lines = [
-        line for line in page_lines if line.strip() != str(visible_page_number)
+        line for line in page_lines if line.strip() not in footer_lines
     ]
 
     pages.append((visible_page_number, filtered_lines))
 
 doc.close()
 
-# Regex patterns
+# Patterns
 section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
 isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
@@ -30,7 +39,6 @@ for page_num, lines in pages:
     while i < len(lines):
         line = lines[i].strip()
         if section_start_pattern.match(line):
-            # Combine multi-line section header
             combined_line = line
             j = i + 1
             while j < len(lines):
