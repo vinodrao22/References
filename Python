@@ -4,14 +4,24 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Load text from pages 15–30 (indexes 14–29)
+# Add known footer or header lines here (case-sensitive match)
+footer_lines = {
+    "This document is confidential and for internal use only.",
+    "Page 1 of 30",
+    "KPMG Audit Template",  # Example
+    # Add more footer/header lines as needed
+}
+
+# Load and clean text
 text = ""
-for page_number in range(14, min(30, len(doc))):
-    text += doc[page_number].get_text() + "\n"
+for page_number in range(14, min(30, len(doc))):  # page 15 = index 14
+    page_lines = doc[page_number].get_text().split('\n')
+    filtered_lines = [line for line in page_lines if line.strip() not in footer_lines]
+    text += '\n'.join(filtered_lines) + '\n'
 
 doc.close()
 
-# Patterns
+# Regex patterns
 section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
 isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
@@ -22,7 +32,6 @@ i = 0
 while i < len(lines):
     line = lines[i].strip()
     if section_start_pattern.match(line):
-        # Combine section header
         combined_line = line
         j = i + 1
         while j < len(lines):
@@ -34,14 +43,13 @@ while i < len(lines):
         combined_line = combined_line.strip()
 
         if len(combined_line) < 150 and isa_pattern.search(combined_line):
-            # Search Q&A blocks
             k = j + 1
             what_ans, why_ans, execute_ans = [], [], []
             mode = None
 
             while k < len(lines):
                 current = lines[k].strip()
-                if section_start_pattern.match(current):  # next section reached
+                if section_start_pattern.match(current):
                     break
                 if current.lower().startswith("what do we do?"):
                     mode = "what"
