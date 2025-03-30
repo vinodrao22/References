@@ -85,7 +85,7 @@ while i < len(all_lines):
                 "why_do_we_do_this": ' '.join(why_ans).strip(),
                 "execute_the_audit": ' '.join(execute_ans).strip()
             })
-        i = max(j, i + 1)  # Ensure we move forward
+        i = k  # <-- FIX: always move to end of Q&A block
     else:
         i += 1
 
