@@ -4,20 +4,11 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Add known footer or header lines here (case-sensitive match)
-footer_lines = {
-    "This document is confidential and for internal use only.",
-    "Page 1 of 30",
-    "KPMG Audit Template",  # Example
-    # Add more footer/header lines as needed
-}
-
-# Load and clean text
-text = ""
+# Collect text page by page along with page number
+pages = []
 for page_number in range(14, min(30, len(doc))):  # page 15 = index 14
     page_lines = doc[page_number].get_text().split('\n')
-    filtered_lines = [line for line in page_lines if line.strip() not in footer_lines]
-    text += '\n'.join(filtered_lines) + '\n'
+    pages.append((page_number + 1, page_lines))  # store actual page number
 
 doc.close()
 
@@ -25,59 +16,60 @@ doc.close()
 section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
 isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
-lines = text.split('\n')
 results = []
 
-i = 0
-while i < len(lines):
-    line = lines[i].strip()
-    if section_start_pattern.match(line):
-        combined_line = line
-        j = i + 1
-        while j < len(lines):
-            next_line = lines[j].strip()
-            combined_line += ' ' + next_line
-            if '[ISA' in next_line:
-                break
-            j += 1
-        combined_line = combined_line.strip()
-
-        if len(combined_line) < 150 and isa_pattern.search(combined_line):
-            k = j + 1
-            what_ans, why_ans, execute_ans = [], [], []
-            mode = None
-
-            while k < len(lines):
-                current = lines[k].strip()
-                if section_start_pattern.match(current):
+for page_num, lines in pages:
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if section_start_pattern.match(line):
+            combined_line = line
+            j = i + 1
+            while j < len(lines):
+                next_line = lines[j].strip()
+                combined_line += ' ' + next_line
+                if '[ISA' in next_line:
                     break
-                if current.lower().startswith("what do we do?"):
-                    mode = "what"
-                elif current.lower().startswith("why do we do this?"):
-                    mode = "why"
-                elif current.lower().startswith("execute the audit"):
-                    mode = "execute"
-                elif mode == "what":
-                    what_ans.append(current)
-                elif mode == "why":
-                    why_ans.append(current)
-                elif mode == "execute":
-                    execute_ans.append(current)
-                k += 1
+                j += 1
+            combined_line = combined_line.strip()
 
-            results.append({
-                "section": combined_line,
-                "what_do_we_do": ' '.join(what_ans).strip(),
-                "why_do_we_do_this": ' '.join(why_ans).strip(),
-                "execute_the_audit": ' '.join(execute_ans).strip()
-            })
-        i = j
-    else:
-        i += 1
+            if len(combined_line) < 150 and isa_pattern.search(combined_line):
+                k = j + 1
+                what_ans, why_ans, execute_ans = [], [], []
+                mode = None
+
+                while k < len(lines):
+                    current = lines[k].strip()
+                    if section_start_pattern.match(current):
+                        break
+                    if current.lower().startswith("what do we do?"):
+                        mode = "what"
+                    elif current.lower().startswith("why do we do this?"):
+                        mode = "why"
+                    elif current.lower().startswith("execute the audit"):
+                        mode = "execute"
+                    elif mode == "what":
+                        what_ans.append(current)
+                    elif mode == "why":
+                        why_ans.append(current)
+                    elif mode == "execute":
+                        execute_ans.append(current)
+                    k += 1
+
+                results.append({
+                    "page": page_num,
+                    "section": combined_line,
+                    "what_do_we_do": ' '.join(what_ans).strip(),
+                    "why_do_we_do_this": ' '.join(why_ans).strip(),
+                    "execute_the_audit": ' '.join(execute_ans).strip()
+                })
+            i = j
+        else:
+            i += 1
 
 # Output
 for item in results:
-    print(f"{item['section']}")
+    print(f"[Page {item['page']}] {item['section']}")
     print(f"What do we do? -> {item['what_do_we_do']}")
     print(f"Why do we do this? -> {item['why_do_we_do_this']}")
     print(f"Execute the Audit -> {item['execute_the_audit']}\n")
