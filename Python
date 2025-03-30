@@ -38,8 +38,14 @@ while i < len(all_lines):
         isa_found = '[ISA' in line
         j = i + 1
 
+        stop_words = ("what do we do?", "why do we do this?", "execute the audit")
         while j < len(all_lines):
             next_line = all_lines[j].strip()
+            lower_line = next_line.lower()
+
+            if any(lower_line.startswith(sw) for sw in stop_words):
+                break  # don't include Q&A headers in section title
+
             combined_line += ' ' + next_line
             if '[ISA' in next_line:
                 isa_found = True
@@ -88,7 +94,7 @@ while i < len(all_lines):
 
     i += 1  # ensure every line is processed
 
-# Output results to console
+# Output to console
 print("\n\n======== FINAL EXTRACTED SECTIONS ========\n")
 for item in results:
     print(f"[Page {item['page']}] {item['section']}")
