@@ -4,7 +4,7 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Load pages 15–30
+# Load text from pages 15–30 (indexes 14–29)
 text = ""
 for page_number in range(14, min(30, len(doc))):
     text += doc[page_number].get_text() + "\n"
@@ -34,30 +34,34 @@ while i < len(lines):
         combined_line = combined_line.strip()
 
         if len(combined_line) < 150 and isa_pattern.search(combined_line):
-            # Search Q&A content
+            # Search Q&A blocks
             k = j + 1
-            what_ans = []
-            why_ans = []
+            what_ans, why_ans, execute_ans = [], [], []
             mode = None
 
             while k < len(lines):
                 current = lines[k].strip()
+                if section_start_pattern.match(current):  # next section reached
+                    break
                 if current.lower().startswith("what do we do?"):
                     mode = "what"
                 elif current.lower().startswith("why do we do this?"):
                     mode = "why"
-                elif current.lower().startswith("execute the audit") or section_start_pattern.match(current):
-                    break
+                elif current.lower().startswith("execute the audit"):
+                    mode = "execute"
                 elif mode == "what":
                     what_ans.append(current)
                 elif mode == "why":
                     why_ans.append(current)
+                elif mode == "execute":
+                    execute_ans.append(current)
                 k += 1
 
             results.append({
                 "section": combined_line,
                 "what_do_we_do": ' '.join(what_ans).strip(),
-                "why_do_we_do_this": ' '.join(why_ans).strip()
+                "why_do_we_do_this": ' '.join(why_ans).strip(),
+                "execute_the_audit": ' '.join(execute_ans).strip()
             })
         i = j
     else:
@@ -65,4 +69,7 @@ while i < len(lines):
 
 # Output
 for item in results:
-    print(f"{item['section']}\nWhat do we do? -> {item['what_do_we_do']}\nWhy do we do this? -> {item['why_do_we_do_this']}\n")
+    print(f"{item['section']}")
+    print(f"What do we do? -> {item['what_do_we_do']}")
+    print(f"Why do we do this? -> {item['why_do_we_do_this']}")
+    print(f"Execute the Audit -> {item['execute_the_audit']}\n")
