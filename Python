@@ -4,22 +4,20 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Collect pages with cleaned lines
+# Fixed footer lines to exclude (case-sensitive exact match)
+footer_lines = {
+    "This document is confidential and for internal use only.",
+    "KPMG Audit Template",
+    # Add more known footer lines here
+}
+
+# Load pages 15–30 (index 14–29), remove only fixed footer lines
 pages = []
-for page_number in range(14, min(30, len(doc))):  # page 15 = index 14
-    visible_page_number = page_number + 1
-
-    # Known static footer lines
-    footer_lines = {
-        str(visible_page_number),  # dynamic footer line: just the page number
-        # Add other static lines if needed
-        # "This document is confidential...",
-        # "KPMG Audit Template",
-    }
-
+for page_number in range(14, min(30, len(doc))):
+    visible_page_number = page_number + 1  # this is what's printed in the PDF
     page_lines = doc[page_number].get_text().split('\n')
 
-    # Exclude known footer lines
+    # Exclude only known footer lines (keep page numbers!)
     filtered_lines = [
         line for line in page_lines if line.strip() not in footer_lines
     ]
@@ -28,7 +26,7 @@ for page_number in range(14, min(30, len(doc))):  # page 15 = index 14
 
 doc.close()
 
-# Patterns
+# Regex patterns
 section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
 isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
