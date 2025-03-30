@@ -17,19 +17,19 @@ isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
 # Load and clean lines from pages 15–30
 all_lines = []
-page_map = []  # track which line belongs to which page
+page_map = []
 
 for page_number in range(14, min(30, len(doc))):  # page 15 = index 14
     visible_page_number = page_number + 1
     page_lines = doc[page_number].get_text().split('\n')
     filtered_lines = [line for line in page_lines if line.strip() not in footer_lines]
     all_lines.extend(filtered_lines)
-    page_map.extend([visible_page_number] * len(filtered_lines))  # tag each line with page
+    page_map.extend([visible_page_number] * len(filtered_lines))
 
 doc.close()
 
-# Now process combined line list
 results = []
+
 i = 0
 while i < len(all_lines):
     line = all_lines[i].strip()
@@ -37,18 +37,22 @@ while i < len(all_lines):
         combined_line = line
         isa_found = '[ISA' in line
         j = i + 1
-        while j < len(all_lines) and not isa_found:
+
+        # Keep combining lines until ISA is found
+        while j < len(all_lines):
             next_line = all_lines[j].strip()
             combined_line += ' ' + next_line
             if '[ISA' in next_line:
                 isa_found = True
-                break
             j += 1
+            if isa_found:
+                break
+
         combined_line = combined_line.strip()
 
-        if len(combined_line) < 150 and isa_pattern.search(combined_line):
-            section_page = page_map[i]  # page where section starts
-            k = j + 1
+        if len(combined_line) < 200 and isa_pattern.search(combined_line):
+            section_page = page_map[i]
+            k = j
             what_ans, why_ans, execute_ans = [], [], []
             mode = None
 
