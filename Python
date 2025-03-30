@@ -4,15 +4,14 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Add known footer or header lines here (case-sensitive match)
+# Add known footer/header lines here (case-sensitive match)
 footer_lines = {
     "This document is confidential and for internal use only.",
     "Page 1 of 30",
-    "KPMG Audit Template",  # Example
-    # Add more footer/header lines as needed
+    # Add more known static footer/header lines as needed
 }
 
-# Load and clean text
+# Load and clean text from pages 15–30
 text = ""
 for page_number in range(14, min(30, len(doc))):  # page 15 = index 14
     page_lines = doc[page_number].get_text().split('\n')
@@ -23,7 +22,7 @@ doc.close()
 
 # Regex patterns
 section_start_pattern = re.compile(r'^\d+(\.\d+)*\s')
-isa_pattern = re.compile(r'ISA\s\|\s\d+')  # Note: likely needs correction to ISA\s\|\s\d+
+isa_pattern = re.compile(r'ISA\s\|\s\d+')
 
 lines = text.split('\n')
 results = []
