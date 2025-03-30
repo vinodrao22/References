@@ -47,8 +47,10 @@ while i < len(all_lines):
                 break
 
         combined_line = combined_line.strip()
+        isa_match = isa_pattern.search(combined_line)
 
-        if isa_pattern.search(combined_line) and len(combined_line) < 200:
+        if isa_match and len(combined_line) < 200:
+            isa_code = isa_match.group(0)
             section_page = page_map[i]
 
             # Debug print
@@ -80,17 +82,19 @@ while i < len(all_lines):
             results.append({
                 "page": section_page,
                 "section": combined_line,
+                "isa_code": isa_code,
                 "what_do_we_do": ' '.join(what_ans).strip(),
                 "why_do_we_do_this": ' '.join(why_ans).strip(),
                 "execute_the_audit": ' '.join(execute_ans).strip()
             })
 
-    i += 1  # ensures every line is checked
+    i += 1  # continue checking every line
 
 # Output
 print("\n\n======== FINAL EXTRACTED SECTIONS ========\n")
 for item in results:
     print(f"[Page {item['page']}] {item['section']}")
+    print(f"ISA Code -> {item['isa_code']}")
     print(f"What do we do? -> {item['what_do_we_do']}")
     print(f"Why do we do this? -> {item['why_do_we_do_this']}")
     print(f"Execute the Audit -> {item['execute_the_audit']}\n")
