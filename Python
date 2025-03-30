@@ -4,24 +4,20 @@ import re
 pdf_path = "pdfextract.pdf"
 doc = fitz.open(pdf_path)
 
-# Fixed footer lines to exclude (case-sensitive exact match)
+# Add known footer or header lines here (case-sensitive match)
 footer_lines = {
     "This document is confidential and for internal use only.",
-    "KPMG Audit Template",
-    # Add more known footer lines here
+    "Page 1 of 30",
+    "KPMG Audit Template",  # Example
+    # Add more footer/header lines as needed
 }
 
-# Load pages 15–30 (index 14–29), remove only fixed footer lines
+# Load and clean text
 pages = []
-for page_number in range(14, min(30, len(doc))):
-    visible_page_number = page_number + 1  # this is what's printed in the PDF
+for page_number in range(14, min(30, len(doc))):  # page 15 = index 14
+    visible_page_number = page_number + 1
     page_lines = doc[page_number].get_text().split('\n')
-
-    # Exclude only known footer lines (keep page numbers!)
-    filtered_lines = [
-        line for line in page_lines if line.strip() not in footer_lines
-    ]
-
+    filtered_lines = [line for line in page_lines if line.strip() not in footer_lines]
     pages.append((visible_page_number, filtered_lines))
 
 doc.close()
@@ -81,7 +77,7 @@ for page_num, lines in pages:
         else:
             i += 1
 
-# Print results
+# Output
 for item in results:
     print(f"[Page {item['page']}] {item['section']}")
     print(f"What do we do? -> {item['what_do_we_do']}")
