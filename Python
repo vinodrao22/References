@@ -8,7 +8,6 @@ doc = fitz.open(pdf_path)
 footer_lines = {
     "This document is confidential and for internal use only.",
     "Page 1 of 30",
-    # Add more static footer/header lines if needed
 }
 
 # Regex patterns
@@ -49,14 +48,15 @@ while i < len(all_lines):
 
         combined_line = combined_line.strip()
 
-        # Debug print for section candidate
+        # Debug print
         print(f"\n[DEBUG] Candidate @ Page {page_map[i]}:")
         print("         ", combined_line)
         print("         ", f"Length: {len(combined_line)}, Contains ISA: {bool(isa_pattern.search(combined_line))}")
 
+        section_page = page_map[i]
+        k = j  # <--- Always define k
+
         if len(combined_line) < 200 and isa_pattern.search(combined_line):
-            section_page = page_map[i]
-            k = j
             what_ans, why_ans, execute_ans = [], [], []
             mode = None
 
@@ -85,11 +85,12 @@ while i < len(all_lines):
                 "why_do_we_do_this": ' '.join(why_ans).strip(),
                 "execute_the_audit": ' '.join(execute_ans).strip()
             })
-        i = k  # <-- FIX: always move to end of Q&A block
+
+        i = k  # Safe now — always defined
     else:
         i += 1
 
-# Output results
+# Output
 print("\n\n======== FINAL EXTRACTED SECTIONS ========\n")
 for item in results:
     print(f"[Page {item['page']}] {item['section']}")
