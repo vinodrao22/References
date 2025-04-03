@@ -22,12 +22,6 @@ df_base = pd.read_excel(base_file)
 df2 = pd.read_excel(file2)
 df3 = pd.read_excel(file3)
 
-# === Clean column names if needed ===
-# Uncomment if needed:
-# df_base.columns = df_base.columns.str.strip().str.lower()
-# df2.columns = df2.columns.str.strip().str.lower()
-# df3.columns = df3.columns.str.strip().str.lower()
-
 # === Clean section titles ===
 df_base["clean_section"] = df_base["section"].apply(clean_section)
 df2["clean_section"] = df2["section"].apply(clean_section)
@@ -49,9 +43,9 @@ for _, row in df_base.iterrows():
 
     output_row = (
         base_row +
-        [row2.get("section", "")] +
+        [row2.get("section", ""), row2.get("page", "")] +
         [row2.get("what_do_we_do", ""), row2.get("why_do_we_do_this", ""), row2.get("execute_the_audit", "")] +
-        [row3.get("section", "")] +
+        [row3.get("section", ""), row3.get("page", "")] +
         [row3.get("what_do_we_do", ""), row3.get("why_do_we_do_this", ""), row3.get("execute_the_audit", "")]
     )
 
@@ -60,8 +54,8 @@ for _, row in df_base.iterrows():
 # === Final column names ===
 columns = (
     df_base.columns[:5].tolist() +
-    ["file2_section", "file2_what", "file2_why", "file2_execute"] +
-    ["file3_section", "file3_what", "file3_why", "file3_execute"]
+    ["file2_section", "file2_page", "file2_what", "file2_why", "file2_execute"] +
+    ["file3_section", "file3_page", "file3_what", "file3_why", "file3_execute"]
 )
 
 # === Write to Excel ===
