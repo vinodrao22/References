@@ -25,7 +25,7 @@ df_base["clean_section"] = df_base["section"].apply(clean_section)
 df2["clean_section"] = df2["section"].apply(clean_section)
 df3["clean_section"] = df3["section"].apply(clean_section)
 
-# === Remove duplicates to allow dictionary lookup ===
+# === Remove duplicates for dictionary lookup ===
 df2_unique = df2.drop_duplicates(subset="clean_section")
 df3_unique = df3.drop_duplicates(subset="clean_section")
 lookup2 = df2_unique.set_index("clean_section").to_dict(orient="index")
@@ -55,28 +55,24 @@ for _, row in df_base.iterrows():
 
     output_rows.append(output_row)
 
-# === Append unmatched rows from file2 ===
-for _, row in df2_unique.iterrows():
-    key = row["clean_section"]
-    if key not in matched_keys:
-        output_row = (
-            [""] * 5 +  # base columns
-            [row["section"], row["page"]] +
-            [row.get("what_do_we_do", ""), row.get("why_do_we_do_this", ""), row.get("execute_the_audit", "")] +
-            [""] * 5  # no file3 data
-        )
-        output_rows.append(output_row)
+# === Find all unmatched keys across both file2 and file3 ===
+all_clean_keys = set(df2_unique["clean_section"]).union(df3_unique["clean_section"])
+unmatched_keys = all_clean_keys - matched_keys
 
-# === Append unmatched rows from file3 ===
-for _, row in df3_unique.iterrows():
-    key = row["clean_section"]
-    if key not in matched_keys:
-        output_row = (
-            [""] * 10 +  # base + file2
-            [row["section"], row["page"]] +
-            [row.get("what_do_we_do", ""), row.get("why_do_we_do_this", ""), row.get("execute_the_audit", "")]
-        )
-        output_rows.append(output_row)
+# === Add one row per unmatched key (combined from both files) ===
+for key in unmatched_keys:
+    row2 = lookup2.get(key, {})
+    row3 = lookup3.get(key, {})
+
+    output_row = (
+        [""] * 5 +
+        [row2.get("section", ""), row2.get("page", "")] +
+        [row2.get("what_do_we_do", ""), row2.get("why_do_we_do_this", ""), row2.get("execute_the_audit", "")] +
+        [row3.get("section", ""), row3.get("page", "")] +
+        [row3.get("what_do_we_do", ""), row3.get("why_do_we_do_this", ""), row3.get("execute_the_audit", "")]
+    )
+
+    output_rows.append(output_row)
 
 # === Final column names ===
 columns = (
