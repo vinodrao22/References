@@ -1,4 +1,3 @@
-
 import pandas as pd
 import re
 
@@ -18,19 +17,25 @@ def clean_section(text):
     text = re.sub(r'(ISA|AICA)\s\|\s\d+', '', text)
     return text.strip().lower()
 
-# === Load all files ===
+# === Load Excel files ===
 df_base = pd.read_excel(base_file)
 df2 = pd.read_excel(file2)
 df3 = pd.read_excel(file3)
+
+# === Clean column names if needed ===
+# Uncomment if needed:
+# df_base.columns = df_base.columns.str.strip().str.lower()
+# df2.columns = df2.columns.str.strip().str.lower()
+# df3.columns = df3.columns.str.strip().str.lower()
 
 # === Clean section titles ===
 df_base["clean_section"] = df_base["section"].apply(clean_section)
 df2["clean_section"] = df2["section"].apply(clean_section)
 df3["clean_section"] = df3["section"].apply(clean_section)
 
-# === Convert to lookup dictionaries ===
-lookup2 = df2.set_index("clean_section").to_dict(orient="index")
-lookup3 = df3.set_index("clean_section").to_dict(orient="index")
+# === Remove duplicates to allow dictionary lookup ===
+lookup2 = df2.drop_duplicates(subset="clean_section").set_index("clean_section").to_dict(orient="index")
+lookup3 = df3.drop_duplicates(subset="clean_section").set_index("clean_section").to_dict(orient="index")
 
 # === Build output rows ===
 output_rows = []
