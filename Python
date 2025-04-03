@@ -55,11 +55,10 @@ for _, row in df_base.iterrows():
 
     output_rows.append(output_row)
 
-# === Find all unmatched keys across both file2 and file3 ===
+# === Append unmatched keys (merged from both file2 and file3) ===
 all_clean_keys = set(df2_unique["clean_section"]).union(df3_unique["clean_section"])
 unmatched_keys = all_clean_keys - matched_keys
 
-# === Add one row per unmatched key (combined from both files) ===
 for key in unmatched_keys:
     row2 = lookup2.get(key, {})
     row3 = lookup3.get(key, {})
