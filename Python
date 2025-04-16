@@ -2,9 +2,14 @@ import requests
 from bs4 import BeautifulSoup
 
 def extract_display_text(url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                      '(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+    }
+
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an error for bad status codes
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
     except Exception as e:
         print(f"Failed to fetch URL: {e}")
         return []
@@ -22,7 +27,7 @@ def extract_display_text(url):
     return result
 
 # Example usage
-url = "https://example.com"  # Replace with your target URL
+url = "https://example.com"  # Replace with your real URL
 texts = extract_display_text(url)
 
 for class_name, text in texts:
