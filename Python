@@ -29,19 +29,19 @@ def extract_and_print_nested_divs(url, class_names, scroll_container_selector):
     options.use_chromium = True
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-gpu')
-    # options.add_argument('--headless')  # Uncomment for headless mode
+    # options.add_argument('--headless')  # Uncomment if you want headless mode
 
     driver = webdriver.Edge(options=options)
 
     try:
         driver.get(url)
 
-        # Wait until the first target class appears
+        # Wait for any of the target class elements to load
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, class_names[0]))
         )
 
-        # Scroll inside the scrollable container div
+        # Scroll inside the inner container to load all contents
         scroll_inside_container(driver, scroll_container_selector)
 
         html = driver.page_source
@@ -51,25 +51,27 @@ def extract_and_print_nested_divs(url, class_names, scroll_container_selector):
 
     soup = BeautifulSoup(html, 'html.parser')
 
-    def print_nested_divs(div, level=0):
+    def print_nested_divs(div, level=0, printed=set()):
         indent = "  " * level
         if div.name == 'div':
-            text = div.get_text(strip=True)
-            if text:
+            text = ''.join(div.find_all(string=True, recursive=False)).strip()
+            if text and text not in printed:
                 print(f"{indent}- {text}")
+                printed.add(text)
         for child in div.find_all('div', recursive=False):
-            print_nested_divs(child, level + 1)
+            print_nested_divs(child, level + 1, printed)
 
+    # Process each DisplayX div and its content
     for cls in class_names:
         divs = soup.find_all('div', class_=cls)
         for div in divs:
             print(f"\n[{cls}]")
-            print_nested_divs(div)
+            print_nested_divs(div, printed=set())
 
-# ==== Script Configuration ====
-url = "https://example.com"  # Replace with actual target URL
+# === Script Configuration ===
+url = "https://example.com"  # Replace with the actual URL
 class_list = ['Display1', 'Display2', 'Display3']
-scroll_container = '.lfcScroll.row.ng-star-inserted'  # Full CSS selector for scrollable container
+scroll_container = '.lfcScroll.row.ng-star-inserted'  # Inner scrollable container
 
-# Run extraction
+# Run
 extract_and_print_nested_divs(url, class_list, scroll_container)
