@@ -1,10 +1,11 @@
+import csv
+import time
 from selenium import webdriver
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-import time
 
 def scroll_inside_container(driver, container_selector, pause_time=2, max_scrolls=20):
     scroll_script = """
@@ -24,24 +25,22 @@ def scroll_inside_container(driver, container_selector, pause_time=2, max_scroll
         last_height = new_height
         time.sleep(pause_time)
 
-def extract_and_print_nested_divs(url, class_names, scroll_container_selector):
+def extract_text_cells_same_row(url, class_names, scroll_container_selector, output_csv="output.csv"):
     options = Options()
     options.use_chromium = True
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-gpu')
-    # options.add_argument('--headless')  # Uncomment if you want headless mode
+    # options.add_argument('--headless')  # Optional for visible debug
 
     driver = webdriver.Edge(options=options)
 
     try:
         driver.get(url)
 
-        # Wait for any of the target class elements to load
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, class_names[0]))
         )
 
-        # Scroll inside the inner container to load all contents
         scroll_inside_container(driver, scroll_container_selector)
 
         html = driver.page_source
@@ -50,28 +49,34 @@ def extract_and_print_nested_divs(url, class_names, scroll_container_selector):
         driver.quit()
 
     soup = BeautifulSoup(html, 'html.parser')
+    rows = []
 
-    def print_nested_divs(div, level=0, printed=set()):
-        indent = "  " * level
-        if div.name == 'div':
-            text = ''.join(div.find_all(string=True, recursive=False)).strip()
-            if text and text not in printed:
-                print(f"{indent}- {text}")
-                printed.add(text)
-        for child in div.find_all('div', recursive=False):
-            print_nested_divs(child, level + 1, printed)
+    def extract_texts(div):
+        texts = []
+        for d in div.find_all('div'):
+            text = d.get_text(strip=True)
+            if text:
+                texts.append(text)
+        return texts
 
-    # Process each DisplayX div and its content
     for cls in class_names:
         divs = soup.find_all('div', class_=cls)
         for div in divs:
-            print(f"\n[{cls}]")
-            print_nested_divs(div, printed=set())
+            row = extract_texts(div)
+            if row:
+                rows.append(row)
 
-# === Script Configuration ===
-url = "https://example.com"  # Replace with the actual URL
+    # Write all rows to CSV
+    with open(output_csv, mode='w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerows(rows)
+
+    print(f"\nExported {len(rows)} rows to '{output_csv}'")
+
+# === Config ===
+url = "https://example.com"  # Replace with actual URL
 class_list = ['Display1', 'Display2', 'Display3']
-scroll_container = '.lfcScroll.row.ng-star-inserted'  # Inner scrollable container
+scroll_container = '.lfcScroll.row.ng-star-inserted'
 
 # Run
-extract_and_print_nested_divs(url, class_list, scroll_container)
+extract_text_cells_same_row(url, class_list, scroll_container)
