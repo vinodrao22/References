@@ -1,5 +1,6 @@
 import csv
 import time
+import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.common.by import By
@@ -25,15 +26,7 @@ def scroll_inside_container(driver, container_selector, pause_time=2, max_scroll
         last_height = new_height
         time.sleep(pause_time)
 
-def extract_text_cells_same_row(url, class_names, scroll_container_selector, output_csv="output.csv"):
-    options = Options()
-    options.use_chromium = True
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-gpu')
-    # options.add_argument('--headless')  # Optional for visible debug
-
-    driver = webdriver.Edge(options=options)
-
+def extract_texts_from_url(driver, url, class_names, scroll_container_selector):
     try:
         driver.get(url)
 
@@ -44,12 +37,11 @@ def extract_text_cells_same_row(url, class_names, scroll_container_selector, out
         scroll_inside_container(driver, scroll_container_selector)
 
         html = driver.page_source
-
-    finally:
-        driver.quit()
+    except Exception as e:
+        print(f"Failed to extract from {url}: {e}")
+        return []
 
     soup = BeautifulSoup(html, 'html.parser')
-    rows = []
 
     def extract_texts(div):
         texts = []
@@ -59,24 +51,55 @@ def extract_text_cells_same_row(url, class_names, scroll_container_selector, out
                 texts.append(text)
         return texts
 
+    all_texts = []
     for cls in class_names:
         divs = soup.find_all('div', class_=cls)
         for div in divs:
-            row = extract_texts(div)
-            if row:
-                rows.append(row)
+            extracted = extract_texts(div)
+            all_texts.extend(extracted)
 
-    # Write all rows to CSV
+    return all_texts
+
+def process_urls_from_excel(input_excel, output_csv, class_names, scroll_container_selector):
+    df = pd.read_excel(input_excel)
+
+    if 'A' not in df.columns and 'B' not in df.columns:
+        df.columns = ['URL', 'Label']
+
+    options = Options()
+    options.use_chromium = True
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-gpu')
+
+    driver = webdriver.Edge(options=options)
+    rows = []
+
+    for idx, row in df.iterrows():
+        url = row[0]
+        label = row[1] if len(row) > 1 else ''
+        print(f"Processing row {idx+1}: {url}")
+        try:
+            extracted_texts = extract_texts_from_url(driver, url, class_names, scroll_container_selector)
+            result_row = [url, label] + extracted_texts
+            rows.append(result_row)
+        except Exception as e:
+            print(f"Error processing {url}: {e}")
+            rows.append([url, label, f"ERROR: {e}"])
+
+    driver.quit()
+
     with open(output_csv, mode='w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
+        writer.writerow(["URL", "Label", "Text1", "Text2", "..."])
         writer.writerows(rows)
 
     print(f"\nExported {len(rows)} rows to '{output_csv}'")
 
-# === Config ===
-url = "https://example.com"  # Replace with actual URL
+# === Configuration ===
+input_excel = "input_urls.xlsx"  # Replace with your actual Excel file
+output_csv = "output.csv"
 class_list = ['Display1', 'Display2', 'Display3']
 scroll_container = '.lfcScroll.row.ng-star-inserted'
 
 # Run
-extract_text_cells_same_row(url, class_list, scroll_container)
+process_urls_from_excel(input_excel, output_csv, class_list, scroll_container)
