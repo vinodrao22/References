@@ -18,10 +18,7 @@ def scroll_inside_container(driver, container_selector, pause_time=2, max_scroll
     last_height = 0
     for _ in range(max_scrolls):
         new_height = driver.execute_script(scroll_script, container_selector)
-        if new_height == -1:
-            print(f"Scroll container '{container_selector}' not found.")
-            break
-        if new_height == last_height:
+        if new_height == -1 or new_height == last_height:
             break
         last_height = new_height
         time.sleep(pause_time)
@@ -60,11 +57,15 @@ def extract_texts_from_url(driver, url, class_names, scroll_container_selector):
 
     return all_texts
 
-def process_urls_from_excel(input_excel, output_csv, class_names, scroll_container_selector):
+def process_urls_from_excel(input_excel, output_csv, class_names, scroll_container_selector,
+                            start_row=0, end_row=None):
     df = pd.read_excel(input_excel)
 
     if 'A' not in df.columns and 'B' not in df.columns:
         df.columns = ['URL', 'Label']
+
+    # Slice the range based on user control
+    df = df.iloc[start_row:end_row]
 
     options = Options()
     options.use_chromium = True
@@ -96,10 +97,14 @@ def process_urls_from_excel(input_excel, output_csv, class_names, scroll_contain
     print(f"\nExported {len(rows)} rows to '{output_csv}'")
 
 # === Configuration ===
-input_excel = "input_urls.xlsx"  # Replace with your actual Excel file
+input_excel = "input_urls.xlsx"  # Replace with actual file path
 output_csv = "output.csv"
 class_list = ['Display1', 'Display2', 'Display3']
 scroll_container = '.lfcScroll.row.ng-star-inserted'
 
+# === Manual Control: Set row range ===
+start_row = 0    # Row index to start from (0-based, so 0 = first Excel row)
+end_row = 100    # Row index to stop (non-inclusive)
+
 # Run
-process_urls_from_excel(input_excel, output_csv, class_list, scroll_container)
+process_urls_from_excel(input_excel, output_csv, class_list, scroll_container, start_row, end_row)
