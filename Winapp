@@ -1,0 +1,58 @@
+@page "/transform"
+
+<h3>Select a Template</h3>
+
+@if (templates is null)
+{
+    <p>Loading templates...</p>
+}
+else
+{
+    <select @bind="selectedTemplateName" @onchange="OnTemplateChange">
+        <option value="">-- Select Template --</option>
+        @foreach (var t in templates)
+        {
+            <option value="@t.Name">@t.Name</option>
+        }
+    </select>
+
+    @if (!string.IsNullOrEmpty(selectedTemplateImage))
+    {
+        <div style="margin-top:20px;">
+            <img src="@selectedTemplateImage" width="300" />
+        </div>
+    }
+}
+
+@code {
+    List<Template> templates;
+    string selectedTemplateName;
+    string selectedTemplateImage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            using HttpClient client = new();
+            var json = await client.GetStringAsync("https://yourcompany.sharepoint.com/path/to/templates.json");
+            templates = System.Text.Json.JsonSerializer.Deserialize<List<Template>>(json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Failed to load templates: " + ex.Message);
+        }
+    }
+
+    void OnTemplateChange(ChangeEventArgs e)
+    {
+        selectedTemplateName = e.Value.ToString();
+        var selected = templates.FirstOrDefault(t => t.Name == selectedTemplateName);
+        selectedTemplateImage = selected?.ImageUrl;
+    }
+
+    public class Template
+    {
+        public string Name { get; set; }
+        public string ImageUrl { get; set; }
+    }
+}
