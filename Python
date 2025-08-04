@@ -1,110 +1,29 @@
-import csv
-import time
-import pandas as pd
-from selenium import webdriver
-from selenium.webdriver.edge.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
+import getpass
+import win32com.client
 
-def scroll_inside_container(driver, container_selector, pause_time=2, max_scrolls=20):
-    scroll_script = """
-        var container = document.querySelector(arguments[0]);
-        if (!container) return -1;
-        container.scrollTop = container.scrollHeight;
-        return container.scrollHeight;
-    """
-    last_height = 0
-    for _ in range(max_scrolls):
-        new_height = driver.execute_script(scroll_script, container_selector)
-        if new_height == -1 or new_height == last_height:
-            break
-        last_height = new_height
-        time.sleep(pause_time)
+def get_current_user():
+    return getpass.getuser()
 
-def extract_texts_from_url(driver, url, class_names, scroll_container_selector):
+def get_ad_groups(username):
+    groups = []
     try:
-        driver.get(url)
-
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, class_names[0]))
-        )
-
-        scroll_inside_container(driver, scroll_container_selector)
-
-        html = driver.page_source
+        obj = win32com.client.Dispatch("ADsNameSpaces")
+        ldap = obj.GetObject("", "LDAP:")
+        user = ldap.OpenDSObject("LDAP://%s" % username, "", "", 0)
+        group_membership = user.GetEx("memberOf")
+        for group in group_membership:
+            groups.append(group)
     except Exception as e:
-        print(f"Failed to extract from {url}: {e}")
-        return []
+        print(f"Error: {e}")
+    return groups
 
-    soup = BeautifulSoup(html, 'html.parser')
-
-    def extract_texts(div):
-        texts = []
-        for d in div.find_all('div'):
-            text = d.get_text(strip=True)
-            if text:
-                texts.append(text)
-        return texts
-
-    all_texts = []
-    for cls in class_names:
-        divs = soup.find_all('div', class_=cls)
-        for div in divs:
-            extracted = extract_texts(div)
-            all_texts.extend(extracted)
-
-    return all_texts
-
-def process_urls_from_excel(input_excel, output_csv, class_names, scroll_container_selector,
-                            start_row=0, end_row=None):
-    df = pd.read_excel(input_excel)
-
-    if 'A' not in df.columns and 'B' not in df.columns:
-        df.columns = ['URL', 'Label']
-
-    # Slice the range based on user control
-    df = df.iloc[start_row:end_row]
-
-    options = Options()
-    options.use_chromium = True
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-gpu')
-
-    driver = webdriver.Edge(options=options)
-    rows = []
-
-    for idx, row in df.iterrows():
-        url = row[0]
-        label = row[1] if len(row) > 1 else ''
-        print(f"Processing row {idx+1}: {url}")
-        try:
-            extracted_texts = extract_texts_from_url(driver, url, class_names, scroll_container_selector)
-            result_row = [url, label] + extracted_texts
-            rows.append(result_row)
-        except Exception as e:
-            print(f"Error processing {url}: {e}")
-            rows.append([url, label, f"ERROR: {e}"])
-
-    driver.quit()
-
-    with open(output_csv, mode='w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(["URL", "Label", "Text1", "Text2", "..."])
-        writer.writerows(rows)
-
-    print(f"\nExported {len(rows)} rows to '{output_csv}'")
-
-# === Configuration ===
-input_excel = "input_urls.xlsx"  # Replace with actual file path
-output_csv = "output.csv"
-class_list = ['Display1', 'Display2', 'Display3']
-scroll_container = '.lfcScroll.row.ng-star-inserted'
-
-# === Manual Control: Set row range ===
-start_row = 0    # Row index to start from (0-based, so 0 = first Excel row)
-end_row = 100    # Row index to stop (non-inclusive)
-
-# Run
-process_urls_from_excel(input_excel, output_csv, class_list, scroll_container, start_row, end_row)
+if __name__ == "__main__":
+    username = get_current_user()
+    print(f"Current user: {username}")
+    print("Fetching AD groups...")
+    groups = get_ad_groups(username)
+    if groups:
+        for group in groups:
+            print(group)
+    else:
+        print("No AD groups found or unable to query Active Directory.")
