@@ -1,29 +1,19 @@
 import getpass
-import win32com.client
+from pyad import aduser
 
-def get_current_user():
-    return getpass.getuser()
+# Get current logged-in user
+username = getpass.getuser()
 
-def get_ad_groups(username):
-    groups = []
-    try:
-        obj = win32com.client.Dispatch("ADsNameSpaces")
-        ldap = obj.GetObject("", "LDAP:")
-        user = ldap.OpenDSObject("LDAP://%s" % username, "", "", 0)
-        group_membership = user.GetEx("memberOf")
-        for group in group_membership:
-            groups.append(group)
-    except Exception as e:
-        print(f"Error: {e}")
-    return groups
+# Fetch AD user
+user = aduser.ADUser.from_cn(username)
 
-if __name__ == "__main__":
-    username = get_current_user()
-    print(f"Current user: {username}")
-    print("Fetching AD groups...")
-    groups = get_ad_groups(username)
-    if groups:
-        for group in groups:
-            print(group)
-    else:
-        print("No AD groups found or unable to query Active Directory.")
+# Print groups
+groups = [g.cn for g in user.get_attribute("memberOf")]
+print(groups)
+
+# Check if user is in a specific group
+group_to_check = "YourADGroupName"
+if group_to_check in groups:
+    print(f"{username} is part of {group_to_check}")
+else:
+    print(f"{username} is NOT part of {group_to_check}")
