@@ -1,19 +1,22 @@
-import getpass
 import subprocess
 
-username = getpass.getuser()
+def is_user_in_group(group_name):
+    result = subprocess.run(
+        ["whoami", "/groups"],
+        capture_output=True,
+        text=True
+    )
 
-# Run net user to see groups
-result = subprocess.run(
-    ["net", "user", username, "/domain"],
-    capture_output=True,
-    text=True
-)
+    # Normalize both to lowercase for case-insensitive matching
+    output = result.stdout.lower()
+    group_name = group_name.lower()
 
-output = result.stdout.lower()
-group_to_check = "youradgroupname".lower()
+    # Check if the group name exists in any line
+    return any(group_name in line for line in output.splitlines())
 
-if group_to_check in output:
-    print(f"{username} is part of {group_to_check}")
+# Example usage
+group_to_check = "FinanceTeam-India-Bangalore-Prod-Users"
+if is_user_in_group(group_to_check):
+    print("User is part of the group")
 else:
-    print(f"{username} is NOT part of {group_to_check}")
+    print("User is NOT part of the group")
