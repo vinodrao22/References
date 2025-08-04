@@ -1,29 +1,19 @@
 import getpass
-from ldap3 import Server, Connection, ALL
+import subprocess
 
-# Your AD server
-server_name = "ldap://yourdomaincontroller.company.com"
-
-# Connect using current credentials (if Kerberos / SSO enabled)
-server = Server(server_name, get_info=ALL)
-conn = Connection(server, auto_bind=True)
-
-# Get current user
 username = getpass.getuser()
 
-# Search user
-conn.search(
-    search_base='DC=yourdomain,DC=com',
-    search_filter=f'(sAMAccountName={username})',
-    attributes=['memberOf']
+# Run net user to see groups
+result = subprocess.run(
+    ["net", "user", username, "/domain"],
+    capture_output=True,
+    text=True
 )
 
-if conn.entries:
-    groups = conn.entries[0]['memberOf']
-    print(groups)
+output = result.stdout.lower()
+group_to_check = "youradgroupname".lower()
 
-    # Check membership
-    if any("YourADGroupName" in str(g) for g in groups):
-        print(f"{username} is part of the AD group")
-    else:
-        print(f"{username} is NOT part of the AD group")
+if group_to_check in output:
+    print(f"{username} is part of {group_to_check}")
+else:
+    print(f"{username} is NOT part of {group_to_check}")
